@@ -23,17 +23,23 @@ hyperparameter worth tweaking on other tasks.
 ######################################################################################
 
 
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
-import random
-import os
-import numpy as np
-import matplotlib.pyplot as plt
-import itertools
-import warnings
-import copy
-import datetime
+def _imports():
+    """
+    Sole purpose is to hide imports
+    """
+    import torch
+    import torch.nn as nn
+    import torch.nn.functional as F
+    import random
+    import os
+    import numpy as np
+    import matplotlib.pyplot as plt
+    import itertools
+    import warnings
+    import copy
+    import datetime
+_imports()
+
 
 class ArcFaceClassifier(nn.Module):
     "See details under notes at the top"
@@ -385,7 +391,7 @@ class _Templates:
                 scheduler = (scheduler, scheduler_hyper),
                 dataset="MNIST",
                 architecture="Resnet18",
-                notes="resnet 18 is pretrained ... expect to see ... using ABC questionable"
+                notes="resnet 18 is pretrained ... expect to see ... using ABC is questionable"
             )
         
         C = Config()

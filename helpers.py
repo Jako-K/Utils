@@ -1,21 +1,20 @@
+def _imports():
+	"""
+	Sole purpose is to hide imports
+	"""
+	import IPython
+	import os
 
-"""
-TODO:
-def plot_scheduler()
-def is_in_jupyter_notebook()
-"""
+	import time
+	import datetime
 
-import IPython
-import os
+	import torchaudio
 
-import time
-import datetime
+	import matplotlib.pyplot as plt
+	from PIL import Image
+	import pathlib
 
-import torchaudio
-
-import matplotlib.pyplot as plt
-from PIL import Image
-import pathlib
+_imports()
 
 
 def in_jupyter():
