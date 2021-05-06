@@ -2,10 +2,10 @@
 """
 
 def get_tokenize_len_above(max_length:int, texts:iter, tokenizer, stop_at_first_violation=True):
-    """
+    #
     # bert-base-uncased can take no more than 512 tokens
     # texts just need to be iterable and contrain strings
-    """
+    #
     return_dict = {}
     for i, text in enumerate(tqdm(texts)):
         length = len(tokenizer.tokenize(train_df.excerpt[0]))
