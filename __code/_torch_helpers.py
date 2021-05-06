@@ -64,6 +64,17 @@ def arcface_loss(cosine, targ, m=0.4):
     return F.cross_entropy(cosine2, targ)
 
 
+class RMSELoss(nn.Module):
+    def __init__(self, eps=1e-6):
+        super().__init__()
+        self.mse = nn.MSELoss()
+        self.eps = eps
+        
+    def forward(self,yhat,y):
+        loss = torch.sqrt(self.mse(yhat,y) + self.eps)
+        return loss
+
+
 def seed_torch(seed=12, deterministic=True):
     torch.backends.cudnn.deterministic = deterministic # <-- If true, can drastically increase run time
     random.seed(seed)
@@ -224,7 +235,7 @@ class _Templates:
                 optimizer.step()
                 optimizer.zero_grad()
                 train_losses[i] = loss.detach().cpu().item()
-                epoch_progress_bar.set_postfix({"train_avg":train_losses.mean(), "valid_avg":valid_losses.mean()})
+                if i: epoch_progress_bar.set_postfix({"train_avg":train_losses[:i].mean()})
                 
             model.eval()
             with torch.no_grad():
@@ -237,12 +248,12 @@ class _Templates:
                     
                     # Batch update and logging
                     valid_losses[i] = loss.detach().cpu().item()
-                    epoch_progress_bar.set_postfix({"train_avg":train_losses.mean(), "valid_avg":valid_losses.mean()})
+                    if i: epoch_progress_bar.set_postfix({"valid_avg":valid_losses[:i].mean()})
             
             # Epoch logging
             stats.iloc[epoch] = [train_losses.mean(), valid_losses.mean()]
             
-        stats.plot(style="-o")
+        stats.plot(style="-o", figsize=(15,5))
         """
 
         self._print(string)
@@ -259,7 +270,7 @@ class _Templates:
             wandb.watch(model, C.criterion, log="all", log_freq=10)
             
         stats = pd.DataFrame(np.zeros((C.epochs,3)), columns=["train_loss", "valid_loss", "learning_rate"])
-        best_model_name = ""
+        best_model_name = "0_EPOCH.pth"
         print(H.get_gpu_memory_info())
 
         ###################################################################################################

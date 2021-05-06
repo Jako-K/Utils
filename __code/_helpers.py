@@ -26,6 +26,19 @@ def in_jupyter():
         return False  # Probably standard Python interpreter
 
 
+def sturges_rule(data):
+    """
+    Data must have well defined: len, min and max
+    Not sure about the intuition for the method or even how well it works, but
+    it seems like a reasonble way of picking bins sizes (and therefore #bins) 
+    """
+    k = 1 + 3.3 * np.log10(len(data))
+    optimal_class_width = ( max(data) - min(data) ) / k
+    number_of_bins = int(np.round(1 + np.log2(len(df))))
+    
+    return optimal_class_width, number_of_bins
+
+
 def get_gpu_memory_info():
     """ Return the systems total amount of VRAM along with current used/free VRAM"""
     # TODO: check if ´nvidia-smi´ is installed 
