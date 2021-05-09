@@ -179,7 +179,7 @@ def plot_scheduler(scheduler, epochs, return_lrs=True):
     return np.array([f"{lr:.3e}" for lr in learning_rates])
 
 
-def get_model_save_name(to_add:dict, model_name:str, include_time=True, separator="  ~  "):
+def get_model_save_name(to_add:dict, model_name:str, separator="  .  ", include_time=True):
     """
     Example: 
     >>> get_model_save_name({"valid_loss":valid_mean}, "model.pth")
@@ -416,3 +416,5 @@ __all__ = ["ArcFaceClassifier", "arcface_loss", "seed_torch", "plot_tensor_image
            "get_device", "get_parameter_count", "acc_metric", "single_forward",
            "plot_scheduler", "get_model_save_name", "wandb_save_as_onnx_model",
            "templates"]
+
+
