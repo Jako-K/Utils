@@ -179,19 +179,19 @@ def plot_scheduler(scheduler, epochs, return_lrs=True):
     return np.array([f"{lr:.3e}" for lr in learning_rates])
 
 
-def get_model_save_name(to_add:dict, model_name:str, include_time=True):
+def get_model_save_name(to_add:dict, model_name:str, include_time=True, separator="  ~  "):
     """
     Example: 
     >>> get_model_save_name({"valid_loss":valid_mean}, "model.pth")
     "time 17.25.32 03-05-2021    valid_loss 0.72153    model_name.pth"
     """
     time = datetime.datetime.now().strftime("%H.%M.%S %d-%m-%Y")
-    return_string = f"time {time}  ~  " if include_time else ""
+    return_string = f"time {time}{separator}" if include_time else ""
     for key, value in to_add.items():
         if type(value) in [float, np.float16, np.float32, np.float64]:
             value = f"{value:.5}".replace("+", "")
 
-        return_string += str(key) + " " + str(value) + "  ~  "
+        return_string += str(key) + " " + str(value) + separator
     return_string += model_name
     assert len(return_string) < 256, "File name is to long" # Windows' char limit for file names.
     return return_string

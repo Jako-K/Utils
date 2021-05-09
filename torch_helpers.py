@@ -30,7 +30,11 @@ CONFIG
 
 # Examine if wandb.watch(model, C.criterion, log="all", log_freq=len(train_dl)+len(valid_dl)) is signifcantly faster, if so add that instead of current every 10 batches update.
 
+# Templates --> Fix save best model in such that it dosen't look at the previous one but at the all time best
+# - Check saved epoch number as well, think it's off by one
 """
+
+
 
 
 from .__code._torch_helpers import *
