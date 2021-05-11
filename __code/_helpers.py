@@ -10,7 +10,8 @@ import datetime
 import matplotlib.pyplot as plt
 from PIL import Image
 import pathlib
-
+import shutil
+import pickle
 
 def in_jupyter():
     # Not the cleanest, but gets the job done
@@ -195,6 +196,11 @@ class _ColorHEX:
         self.grey =  "#7f7f7f"
 colors_hex = _ColorHEX()
 
+
+def copy_folder(from_path, to_path):
+    assert not os.path.exists(to_path), "shutil don't allow ´to_path´ to already exist"
+    shutil.copytree(from_path, to_path)
+    assert os.path.exists(to_path), "Something went wrong"
 
 def get_imports(request="all"):
     legal = ["torch", "torchvision", "all_around", "path", "file", "all"]

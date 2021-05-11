@@ -1,6 +1,7 @@
 # TODO:
 """
 
+# This should probably just be get longest token instead, right?
 def get_tokenize_len_above(max_length:int, texts:iter, tokenizer, stop_at_first_violation=True):
     #
     # bert-base-uncased can take no more than 512 tokens
@@ -32,6 +33,13 @@ CONFIG
 
 # Templates --> Fix save best model in such that it dosen't look at the previous one but at the all time best
 # - Check saved epoch number as well, think it's off by one
+
+# ADD pin_memory = True in dataloaders
+
+# ADD wandb.run.summary["best_valid_loss", "best_valid_loss_epoch"] to training loop and in general update it
+
+# ADD multiple saved model in training loop such that perhaps the 3 best models get saved as opposed to only the very best
+
 """
 
 
