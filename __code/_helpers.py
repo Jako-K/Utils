@@ -12,6 +12,7 @@ from PIL import Image
 import pathlib
 import shutil
 import pickle
+import numpy as np
 
 def in_jupyter():
     # Not the cleanest, but gets the job done
@@ -35,7 +36,7 @@ def sturges_rule(data):
     """
     k = 1 + 3.3 * np.log10(len(data))
     optimal_class_width = ( max(data) - min(data) ) / k
-    number_of_bins = int(np.round(1 + np.log2(len(df))))
+    number_of_bins = int(np.round(1 + np.log2(len(data))))
     
     return optimal_class_width, number_of_bins
 
@@ -118,7 +119,6 @@ def show_image(path:str):
     display(Image.open(path))
 
 
-
 def play_audio(path:str, plot:bool = True):
     assert os.path.exists(path), "Bad path"
     assert in_jupyter(), "Most be in Jupyer notebook"
@@ -184,6 +184,7 @@ class _ColorRGB:
         return True
 colors_rgb = _ColorRGB()
 
+
 class _ColorHEX:
     def __init__(self):
         self.blue = "#1f77b4"
@@ -201,6 +202,7 @@ def copy_folder(from_path, to_path):
     assert not os.path.exists(to_path), "shutil don't allow ´to_path´ to already exist"
     shutil.copytree(from_path, to_path)
     assert os.path.exists(to_path), "Something went wrong"
+
 
 def get_imports(request="all"):
     legal = ["torch", "torchvision", "all_around", "path", "file", "all"]
@@ -282,7 +284,58 @@ def extract_file_extension(file_name:str):
 	return ''.join(pathlib.Path(file_name).suffixes)
 
 
-__all__ = ["in_jupyter", "get_gpu_memory_info", "expand_jupyter_screen", "Timer", 
-		   "show_image", "play_audio", "read_txt_file", "save_as_pickle_file",
-		   "load_pickle_file", "colors_rgb", "colors_hex", "get_imports", 
-		   "extract_file_extension"]
+
+def plot_average_uncertainty(data, stds=2):
+    """
+    data: np.array with shape (samples X repetitions)
+    """
+    xs = np.arange(len(data))
+    std = data.std(1)
+    mean = data.mean(1)
+    
+    _, (ax1, ax2) = plt.subplots(1,2, figsize=(15, 5))
+    ax1.set_title("Individual")
+    ax1.plot(data, ".-")
+    
+    ax2.set_title("Averaged with uncertainty")
+    ax2.plot(mean, 'o-', color=colors_hex.blue, label='Mean')
+    plt.sca(ax2) # <-- so gca works, super wierd but gets the job done
+    plt.gca().fill_between(xs, mean - stds*std, mean + stds*std,  color='lightblue', alpha=0.5, label=r"$2\sigma$")
+    plt.plot(xs, [mean.mean()]*15, '--', color=colors_hex.orange, label="Mean of means")
+    ax2.legend()
+    plt.show()
+
+
+def to_bins(target, bins="auto"):
+    if bins == "auto":
+        _, bins = H.sturges_rule(target)
+    
+    count, division = np.histogram(target, bins=bins)
+    groups = np.digitize(target, division)
+    return groups, bins, division
+
+# Check __all__ have all function ones in a while
+# [func for func, _ in inspect.getmembers(H, inspect.isfunction)]
+# [func for func, _ in inspect.getmembers(H, inspect.isclass)]
+
+__all__ = [
+    # Functions
+    'copy_folder',
+    'expand_jupyter_screen',
+    'extract_file_extension',
+    'get_gpu_memory_info',
+    'get_imports',
+    'in_jupyter',
+    'load_pickle_file',
+    'play_audio',
+    'plot_average_uncertainty',
+    'read_txt_file',
+    'save_as_pickle_file',
+    'show_image',
+    'sturges_rule',
+    'to_bins',
+    
+    # Classes
+    'colors_rgb',
+    'colors_hex'
+    ]

@@ -411,10 +411,26 @@ class _Templates:
 
 templates = _Templates()
 
+# Check __all__ have all function ones in a while
+# [func for func, _ in inspect.getmembers(T, inspect.isfunction)]
+# [func for func, _ in inspect.getmembers(T, inspect.isclass)]
 
-__all__ = ["ArcFaceClassifier", "arcface_loss", "seed_torch", "plot_tensor_image",
-           "get_device", "get_parameter_count", "acc_metric", "single_forward",
-           "plot_scheduler", "get_model_save_name", "wandb_save_as_onnx_model",
-           "templates"]
+__all__ =[
+    # Functions
+    'acc_metric',
+    'arcface_loss',
+    'get_device',
+    'get_model_save_name',
+    'get_parameter_count',
+    'plot_scheduler',
+    'plot_tensor_image',
+    'seed_torch',
+    'single_forward',
+    'wandb_save_as_onnx_model',
 
+    # Classes
+    'ArcFaceClassifier',
+    'RMSELoss',
+    'templates'
+]
 
