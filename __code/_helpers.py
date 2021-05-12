@@ -293,7 +293,7 @@ def plot_average_uncertainty(data, stds=2):
     std = data.std(1)
     mean = data.mean(1)
     
-    _, (ax1, ax2) = plt.subplots(1,2, figsize=(15, 5))
+    fig, (ax1, ax2) = plt.subplots(1,2, figsize=(15, 5))
     ax1.set_title("Individual")
     ax1.plot(data, ".-")
     
@@ -304,6 +304,8 @@ def plot_average_uncertainty(data, stds=2):
     plt.plot(xs, [mean.mean()]*15, '--', color=colors_hex.orange, label="Mean of means")
     ax2.legend()
     plt.show()
+
+    return fig
 
 
 def to_bins(target, bins="auto"):
