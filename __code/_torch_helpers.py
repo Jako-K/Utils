@@ -34,6 +34,8 @@ import itertools
 import warnings
 import copy
 import datetime
+import wandb
+from . import _helpers as H
 
 
 class ArcFaceClassifier(nn.Module):
@@ -148,7 +150,7 @@ def acc_metric(pred_logits:torch.tensor, labels:torch.tensor):
 
 def single_forward(model, dl):
     """
-    batch[0] must be what the model expects e.g. images, labels = batch
+    batch[0] must be what the model expects e.g. batch = (images, labels)
     """
     sample = next(iter(dl))[0]
     model_device = next(model.parameters()).device
@@ -197,12 +199,18 @@ def get_model_save_name(to_add:dict, model_name:str, separator="  .  ", include_
     return return_string
 
 
-def wandb_save_as_onnx_model(model, model_input, model_name:str = "model.onnx"):
+def wandb_save_as_onnx_model(model, model_input, model_name:str = "model.onnx", path_to:str = "active_wandb"):
     """
     assert wandb is imported and active such that wandb.run.dir returns the correct path
     """
-    assert extract_file_extension(model_name) == ".onnx"
-    torch.onnx.export(model, model_input, os.path.join(wandb.run.dir, model_name))
+    assert H.extract_file_extension(model_name) == ".onnx", "No .onnx file extension fould"
+    if path_to == "active_wandb":
+        assert wandb.run is not None, "Problems with wand.run, perhaps there's no active wandb folder?"
+        to_path = os.path.join(wandb.run.dir, model_name)
+    else:
+        path_to = ""
+
+    torch.onnx.export(model, model_input, os.path.join(path_to, model_name))
     wandb.save(model_name)
 
 class _Templates:
