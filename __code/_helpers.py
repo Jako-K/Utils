@@ -320,7 +320,7 @@ def to_bins(target, bins="auto"):
 def write_to_file(file_path:str, write_string:str, only_txt:bool = True):
     """ Appends a string to the end of a file"""
     if only_txt:
-        assert H.extract_file_extension(file_path) == ".txt", "´only_txt´ = true, but file type is not .txt"
+        assert extract_file_extension(file_path) == ".txt", "´only_txt´ = true, but file type is not .txt"
     
     file = open(file_path, mode="a")
     print(write_string, file=file)
