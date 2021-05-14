@@ -301,7 +301,7 @@ def plot_average_uncertainty(data, stds=2):
     ax2.plot(mean, 'o-', color=colors_hex.blue, label='Mean')
     plt.sca(ax2) # <-- so gca works, super wierd but gets the job done
     plt.gca().fill_between(xs, mean - stds*std, mean + stds*std,  color='lightblue', alpha=0.5, label=r"$2\sigma$")
-    plt.plot(xs, [mean.mean()]*15, '--', color=colors_hex.orange, label="Mean of means")
+    plt.plot(xs, [mean.mean()]*len(xs), '--', color=colors_hex.orange, label="Mean of means")
     ax2.legend()
     plt.show()
 
@@ -341,3 +341,4 @@ __all__ = [
     'colors_rgb',
     'colors_hex'
     ]
+
