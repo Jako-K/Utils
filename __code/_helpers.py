@@ -316,6 +316,16 @@ def to_bins(target, bins="auto"):
     groups = np.digitize(target, division)
     return groups, bins, division
 
+
+def write_to_file(file_path:str, write_string:str, only_txt:bool = True):
+    """ Appends a string to the end of a file"""
+    if only_txt:
+        assert H.extract_file_extension(file_path) == ".txt", "´only_txt´ = true, but file type is not .txt"
+    
+    file = open(file_path, mode="a")
+    print(write_string, file=file)
+    file.close()
+
 # Check __all__ have all function ones in a while
 # [func for func, _ in inspect.getmembers(H, inspect.isfunction)]
 # [func for func, _ in inspect.getmembers(H, inspect.isclass)]
@@ -336,6 +346,7 @@ __all__ = [
     'show_image',
     'sturges_rule',
     'to_bins',
+    'write_to_file',
     
     # Classes
     'colors_rgb',
