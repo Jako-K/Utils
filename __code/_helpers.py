@@ -3,7 +3,9 @@ warnings.filterwarnings("ignore", category=UserWarning)
 import torchaudio
 warnings.filterwarnings("default", category=UserWarning)
 
+import torch
 import IPython
+import random
 import os
 import time
 import datetime
@@ -13,6 +15,9 @@ import pathlib
 import shutil
 import pickle
 import numpy as np
+import cv2
+import inspect
+
 
 def in_jupyter():
     # Not the cleanest, but gets the job done
@@ -58,8 +63,20 @@ def get_gpu_memory_info():
     output_to_list = lambda x: x.decode('ascii').split('\n')[:-1]
     free_vram = get_info("free")
     total_vram = get_info("total")
-    return {"free": free_vram, "used": total_vram-free_vram, "total":total_vram}
+    return {"GPU":torch.cuda.get_device_properties(0).name,
+            "free": free_vram, 
+            "used": total_vram-free_vram, 
+            "total":total_vram
+            }
     
+def get_gpu_info():
+    return {"name" : torch.cuda.get_device_properties(0).name,
+            "major" : torch.cuda.get_device_properties(0).major,
+            "minor" : torch.cuda.get_device_properties(0).minor,
+            "total_memory" : torch.cuda.get_device_properties(0).total_memory/10**6,
+            "multi_processor_count" : torch.cuda.get_device_properties(0).multi_processor_count
+            }
+
 
 def expand_jupyter_screen(percentage:int = 75):
     assert percentage in [i for i in range(50,101)], "Bad argument" # Below 50 just seems odd, assumed to be a mistake
@@ -136,16 +153,16 @@ def play_audio(path:str, plot:bool = True):
 
 
 def read_txt_file(path):
-        assert os.path.exists(path), "Bad path"
-        assert path[-4:] == ".txt", "Wrong file format, expected ´.txt´"
-        objFile = open(path, "r")
-        fileContent = objFile.read();
-        objFile.close()
-        
-        return fileContent
+    assert os.path.exists(path), "Bad path"
+    assert path[-4:] == ".txt", "Wrong file format, expected ´.txt´"
+    objFile = open(path, "r")
+    fileContent = objFile.read();
+    objFile.close()
+    
+    return fileContent
 
 
-def save_as_pickle_file(obj, file_name:str, save_path:str=None):
+def save_as_pickle_file(obj:object, file_name:str, save_path:str=None):
     assert obj is not None and file_name is not None, "Bad argument(s)"
     if save_path is None:
         save_path = os.getcwd()
@@ -173,6 +190,7 @@ class _ColorRGB:
         self.brown = (140, 86, 75)
         self.pink = (227, 119, 194)
         self.grey = (127, 127, 127)
+        self.white = (225, 255, 255)
 
     def random_color(self):
         return [random.randint(0, 255) for i in range(3)]
@@ -299,7 +317,7 @@ def plot_average_uncertainty(data, stds=2):
     
     ax2.set_title("Averaged with uncertainty")
     ax2.plot(mean, 'o-', color=colors_hex.blue, label='Mean')
-    plt.sca(ax2) # <-- so gca works, super wierd but gets the job done
+    plt.sca(ax2) # <-- makes gca work, super wierd but gets the job done
     plt.gca().fill_between(xs, mean - stds*std, mean + stds*std,  color='lightblue', alpha=0.5, label=r"$2\sigma$")
     plt.plot(xs, [mean.mean()]*len(xs), '--', color=colors_hex.orange, label="Mean of means")
     ax2.legend()
@@ -326,6 +344,46 @@ def write_to_file(file_path:str, write_string:str, only_txt:bool = True):
     print(write_string, file=file)
     file.close()
 
+
+def scientific_notation(number, num_mantissa=4):
+    assert f"{number}".isnumeric() and f"{num_mantissa}".isnumeric() 
+    return format(number, f".{num_mantissa}E")
+
+
+
+def save_plt_plot(save_path, fig=None, dpi=300):
+    assert extract_file_extension(save_path) in [".png", ".jpg", ".pdf"]
+    if fig is None:
+        plt.savefig(save_path, dpi = dpi, bbox_inches = 'tight')
+    else:
+        fig.savefig(save_path, dpi = dpi, bbox_inches = 'tight')
+
+
+def plot_lambda(lambda_f, a:int=None, b:int=None):
+    """ TODO: find a better solution than a,b = -10,10 when None"""
+    if a is None: a = -10
+    if b is None: b = 10
+    xs = np.linspace(a, b, 500)
+    ys = [lambda_f(x) for x in xs]
+    plt.plot(xs, ys)
+
+
+def plot_cv2_image(image, name=""):
+    cv2.imshow(name, image)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
+
+def unfair_coin_flip(p):
+    return random.random() > p
+
+
+def get_all_available_import_functions(module):
+    return [func for func, _ in inspect.getmembers(module, inspect.isfunction)]
+
+def get_all_available_import_classes(module):
+    return [func for func, _ in inspect.getmembers(module, inspect.isclass)]
+
+
 # Check __all__ have all function ones in a while
 # [func for func, _ in inspect.getmembers(H, inspect.isfunction)]
 # [func for func, _ in inspect.getmembers(H, inspect.isclass)]
@@ -347,6 +405,15 @@ __all__ = [
     'sturges_rule',
     'to_bins',
     'write_to_file',
+    'scientific_notation',
+    'save_plt_plot',
+    'plot_lambda',
+    'get_gpu_info',
+    'plot_cv2_image',
+    'unfair_coin_flip',
+    'get_all_available_import_functions',
+    'get_all_available_import_classes',
+
     
     # Classes
     'colors_rgb',

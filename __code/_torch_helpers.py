@@ -22,7 +22,6 @@ hyperparameter worth tweaking on other tasks.
 #                                       CODE                                         #
 ######################################################################################
 
-
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -35,6 +34,7 @@ import warnings
 import copy
 import datetime
 import wandb
+import cv2
 from . import _helpers as H
 
 
@@ -218,6 +218,14 @@ class _Templates:
     def _print(self, string):
         [print(line[8:]) for line in string.split("\n")]
 
+    def scheduler_plotter(self):
+        string=\
+        """
+        # !git clone https://www.github.com/Jako-K/schedulerplotter
+        from schedulerplotter import Plotter
+        Plotter();
+        """
+        self._print(string)
 
     def training_loop_minimal(self):
         string =\
@@ -419,6 +427,51 @@ class _Templates:
 
 templates = _Templates()
 
+
+
+def yolo_draw_bbs_path(yolo_image_path, yolo_bb_path, color = (0,0,255)):
+    assert os.path.exists(yolo_image_path), "Bad path"
+    image = cv2.imread(yolo_image_path)
+    dh, dw, _ = image.shape
+
+    fl = open(yolo_bb_path, "r")
+    data = fl.readlines()
+    fl.close()
+
+    for dt in data:
+        _, x, y, w, h = map(float, dt.split(' '))
+        l = int((x - w / 2) * dw)
+        r = int((x + w / 2) * dw)
+        t = int((y - h / 2) * dh)
+        b = int((y + h / 2) * dh)
+
+        if l < 0: l = 0
+        if r > dw - 1: r = dw - 1
+        if t < 0: t = 0
+        if b > dh - 1: b = dh - 1
+
+        cv2.rectangle(image, (l, t), (r, b), color, 2)
+    return image
+
+
+
+def yolo_draw_single_bb_cv2(image_cv2, x, y, w, h, color=(0,0,255)):
+    dh, dw, _ = image_cv2.shape
+
+    l = int( (x - w/2) * dw)
+    r = int( (x + w/2) * dw)
+    t = int( (y - h/2) * dh)
+    b = int( (y + h/2) * dh)
+
+    if l < 0: l = 0
+    if r > dw - 1: r = dw - 1
+    if t < 0: t = 0
+    if b > dh - 1: b = dh - 1
+
+    cv2.rectangle(image_cv2, (l, t), (r, b), color, 2)
+    return image_cv2
+
+
 # Check __all__ have all function ones in a while
 # [func for func, _ in inspect.getmembers(T, inspect.isfunction)]
 # [func for func, _ in inspect.getmembers(T, inspect.isclass)]
@@ -435,6 +488,8 @@ __all__ =[
     'seed_torch',
     'single_forward',
     'wandb_save_as_onnx_model',
+    'yolo_draw_bbs_path',
+    'yolo_draw_single_bb_cv2',
 
     # Classes
     'ArcFaceClassifier',
