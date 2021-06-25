@@ -38,6 +38,7 @@ import cv2
 from . import _helpers as H
 
 
+
 class ArcFaceClassifier(nn.Module):
     "See details under notes at the top"
     def __init__(self, emb_size, output_classes):
@@ -184,8 +185,8 @@ def plot_scheduler(scheduler, epochs, return_lrs=True):
 def get_model_save_name(to_add:dict, model_name:str, separator="  .  ", include_time=True):
     """
     Example: 
-    >>> get_model_save_name({"valid_loss":valid_mean}, "model.pth")
-    "time 17.25.32 03-05-2021    valid_loss 0.72153    model_name.pth"
+    >>> get_model_save_name({"valid_loss":valid_mean}, "model.pth", "  |  ")
+    "time 17.25.32 03-05-2021  |  valid_loss 0.72153  |  model_name.pth"
     """
     time = datetime.datetime.now().strftime("%H.%M.%S %d-%m-%Y")
     return_string = f"time {time}{separator}" if include_time else ""
@@ -195,7 +196,9 @@ def get_model_save_name(to_add:dict, model_name:str, separator="  .  ", include_
 
         return_string += str(key) + " " + str(value) + separator
     return_string += model_name
-    assert len(return_string) < 256, "File name is to long" # Windows' char limit for file names.
+    if H.on_windows():
+        assert len(return_string) < 256, "File name is to long" # Windows' char limit for file names is 8 bits.
+    
     return return_string
 
 
@@ -226,6 +229,26 @@ class _Templates:
         Plotter();
         """
         self._print(string)
+
+    def common_album_aug(self):
+        string=\
+        """
+        from albumentations.pytorch import ToTensorV2
+        from albumentations import (
+            HorizontalFlip, VerticalFlip, IAAPerspective, ShiftScaleRotate, CLAHE, RandomRotate90,
+            Transpose, ShiftScaleRotate, Blur, OpticalDistortion, GridDistortion, HueSaturationValue,
+            IAAAdditiveGaussianNoise, GaussNoise, MotionBlur, MedianBlur, IAAPiecewiseAffine, RandomResizedCrop,
+            IAASharpen, IAAEmboss, RandomBrightnessContrast, Flip, OneOf, Compose, Normalize, Cutout, CoarseDropout, 
+            ShiftScaleRotate, CenterCrop, Resize, MultiplicativeNoise, Solarize, MotionBlur
+        )
+
+        train_transforms= Compose([
+            RandomResizedCrop(height?, width?),
+            ToTensorV2()
+        ])
+
+        aug_image = augmentations(image=IMAGE_NAME?)['image']
+        """
 
     def training_loop_minimal(self):
         string =\

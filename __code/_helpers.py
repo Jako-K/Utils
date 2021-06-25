@@ -17,6 +17,10 @@ import pickle
 import numpy as np
 import cv2
 import inspect
+import pathlib
+import psutil
+import platform
+from datetime import datetime
 
 
 def in_jupyter():
@@ -31,6 +35,10 @@ def in_jupyter():
             return False  # Other type (?)
     except NameError:
         return False  # Probably standard Python interpreter
+
+
+def on_windows():
+    return os.name == "nt"
 
 
 def sturges_rule(data):
@@ -76,6 +84,20 @@ def get_gpu_info():
             "total_memory" : torch.cuda.get_device_properties(0).total_memory/10**6,
             "multi_processor_count" : torch.cuda.get_device_properties(0).multi_processor_count
             }
+
+
+def get_general_computer_info():
+    uname = platform.uname()
+
+    print("="*40, "System Information", "="*40)
+    print(f"System: {uname.system}")
+    print(f"Node Name: {uname.node}")
+    print(f"Release: {uname.release}")
+    print(f"Version: {uname.version}")
+    print(f"Machine: {uname.machine}")
+    print(f"Processor: {uname.processor}")
+    print(f"GPU: {get_gpu_info()['name']} - {round(get_gpu_info()['total_memory'])} VRAM")
+    print("="*100)
 
 
 def expand_jupyter_screen(percentage:int = 75):
@@ -261,7 +283,8 @@ def get_imports(request="all"):
     from tqdm.notebook import tqdm
     import pandas as pd
     import numpy as np
-    import os\
+    import os
+    import wandb\
     """
 
     path_imp = \
@@ -380,8 +403,53 @@ def unfair_coin_flip(p):
 def get_all_available_import_functions(module):
     return [func for func, _ in inspect.getmembers(module, inspect.isfunction)]
 
+
 def get_all_available_import_classes(module):
     return [func for func, _ in inspect.getmembers(module, inspect.isclass)]
+
+
+def get_current_working_directory():
+    return str(pathlib.Path().absolute())
+
+
+def get_changed_file_name(file_path, new_file_name, path_separator="\\", new_file_extension=""):
+    assert os.path.exists(file_path), "Bad path"
+    assert type(new_file_extension) == str, "new_file_extension is not of type str"
+
+    # Just a pain to deal with with backslashes
+    if path_separator == "\\":
+        file_path = file_path.replace(path_separator, "/")
+
+    # Make all the necesarry string slices
+    rear_dot_index = file_path.rfind(".")
+    old_extension = file_path[rear_dot_index:]
+    path_before_filename_index = file_path.rfind("/")
+    path_before_filename = file_path[:path_before_filename_index]
+    new_path = os.path.join( path_before_filename, new_file_name)
+    
+    # Make the new name
+    if (rear_dot_index == -1) and (new_file_extension == ""):
+        return new_path
+    elif (rear_dot_index == -1) and bool(new_file_extension):
+        assert new_file_extension.find(".") != -1, "new_file_extension is missing a ´.´"
+        return new_path + new_file_extension
+    else:
+        return new_path + old_extension
+
+
+def number_of_files_in(folder_path):
+    return len(glob.glob( os.path.join(folder_path, "*")))
+
+
+def get_module_path(module):
+    return pathlib.Path(module.__file__).resolve().parent
+
+
+def cv2_resize_image(image, scale_percent):
+    scale_percent = scale_percent
+    width = int(image.shape[1] * scale_percent)
+    height = int(image.shape[0] * scale_percent)
+    return cv2.resize(image, (width, height), interpolation = cv2.INTER_AREA)
 
 
 # Check __all__ have all function ones in a while
@@ -413,10 +481,15 @@ __all__ = [
     'unfair_coin_flip',
     'get_all_available_import_functions',
     'get_all_available_import_classes',
-
+    'get_current_working_directory',
+    'get_changed_file_name',
+    'number_of_files_in',
+    'on_windows',
+    'get_general_computer_info',
+    'get_module_path',
+    'cv2_resize_image',
     
     # Classes
     'colors_rgb',
-    'colors_hex'
+    'colors_hex',
     ]
-
