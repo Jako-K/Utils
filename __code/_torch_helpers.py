@@ -242,7 +242,7 @@ class _Templates:
             ShiftScaleRotate, CenterCrop, Resize, MultiplicativeNoise, Solarize, MotionBlur
         )
 
-        train_transforms= Compose([
+        augmentations = Compose([
             RandomResizedCrop(height?, width?),
             ToTensorV2()
         ])

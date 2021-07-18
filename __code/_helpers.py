@@ -8,7 +8,7 @@ import IPython
 import random
 import os
 import time
-import datetime
+from datetime import timedelta
 import matplotlib.pyplot as plt
 from PIL import Image
 import pathlib
@@ -20,8 +20,8 @@ import inspect
 import pathlib
 import psutil
 import platform
-from datetime import datetime
-
+from tkinter import Tk
+import itertools
 
 def in_jupyter():
     # Not the cleanest, but gets the job done
@@ -115,35 +115,50 @@ class Timer:
 
     timer.start()
     time.sleep(2)
-    timer.end()
+    timer.stop()
 
     print(timer.get_elapsed_time())
 
     """
 
-    def __init__(self):
+    def __init__(self, time_unit="seconds", precision_decimals=3):
         self._start_time = None
         self._elapsed_time = None
-        self._unit = "hour/min/sec"
+        self._is_running = False
+        self._unit = None; self.set_unit(time_unit)
+        self.precision_decimals = precision_decimals
 
     def start(self):
-        self._start_time = time.time()
+        if self._start_time is not None:
+            self.reset()
 
-    def end(self):
-        self._elapsed_time = round(time.time() - self._start_time,3)
+        self._start_time = time.time()
+        self._is_running = True
+
+    def _calculate_elapsed_time(self):
+        if self._start_time is None:
+            return None
+        else:
+            return round(time.time() - self._start_time, self.precision_decimals)
+
+    def stop(self):
+        assert self._start_time is not None, "Call `start()` before `stop()`"
+        self._elapsed_time = self._calculate_elapsed_time()
+        self._is_running = False
 
     def get_elapsed_time(self):
+        current_time = self._calculate_elapsed_time() if self._is_running else self._elapsed_time
 
-        if self._unit == "hour/min/sec":
-            return str(datetime.timedelta(seconds=self._elapsed_time)).split(".")[0] # the ugly bit is just to remove ms
+        if current_time is None:
+            return 0
         elif self._unit == "seconds":
-            return self._elapsed_time
+            return current_time
         elif self._unit == "minutes":
-            return self._elapsed_time / 60.0
+            return current_time / 60.0
         elif self._unit == "hours":
-            return self._elapsed_time / 3600.0
-        elif self._elapsed_time is None:
-            return None
+            return current_time / 3600.0
+        elif self._unit == "hour/min/sec":
+            return str(timedelta(seconds=current_time)).split(".")[0] # the ugly bit is just to remove ms
         else:
             raise RuntimeError("Should not have gotten this far")
 
@@ -151,11 +166,66 @@ class Timer:
         assert time_unit in ("hour/min/sec", "seconds", "minutes", "hours")
         self._unit = time_unit
 
+    def reset(self):
+        self._start_time = None
+        self._elapsed_time = None
+        self._is_running = False
+
+
+class FPS_Timer:
+    """
+    EXAMPLE:
+
+    fps_timer = FPS_Timer()
+    fps_timer.start()
+
+    for _ in range(10):
+        time.sleep(0.2)
+        fps_timer.increment_frame_count()
+        display(fps_timer.get_fps())
+
+    """
+
+    def __init__(self, precision_decimals=3):
+        self._start_time = None
+        self._elapsed_time = None
+        self.frame_count = 0
+        self.fpss = []
+        self.precision_decimals = precision_decimals
+
+    def start(self):
+        assert self._start_time is None, "Call `reset()` before you call `start()` again"
+        self._start_time = time.time()
+
+    def _get_elapsed_time(self):
+        return round(time.time() - self._start_time, self.precision_decimals)
+
+    def update(self):
+        self.frame_count += 1
+        self.fpss.append(self._get_elapsed_time())
+
+    def get_fps(self, rounded=3):
+        assert self._start_time is not None, "Call `start()` before you call `get_fps()`"
+        if len(self.fpss) < 2:
+            fps = 0
+        else:
+            fps = 1 / (self.fpss[-1] - self.fpss[-2])
+        return round(fps, 3)
+
+    def reset(self):
+        self._elapsed_time = None
+        self.frame_count = 0
+        self.fpss = []
+
 
 def show_image(path:str):
     assert in_jupyter(), "Most be in Jupyer notebook"
     assert os.path.exists(path), "Bad path"
-    display(Image.open(path))
+    if in_jupyter():
+        display(Image.open(path))
+    else:
+        img = cv2.imread(path)
+        plot_cv2_image(img)
 
 
 def play_audio(path:str, plot:bool = True):
@@ -200,6 +270,8 @@ def load_pickle_file(path: str):
     assert os.path.exists(path), "Bad path"
     with open(path, 'rb') as pickle_file:
         return pickle.load(pickle_file)
+
+
 
 
 class _ColorRGB:
@@ -373,7 +445,6 @@ def scientific_notation(number, num_mantissa=4):
     return format(number, f".{num_mantissa}E")
 
 
-
 def save_plt_plot(save_path, fig=None, dpi=300):
     assert extract_file_extension(save_path) in [".png", ".jpg", ".pdf"]
     if fig is None:
@@ -452,6 +523,50 @@ def cv2_resize_image(image, scale_percent):
     return cv2.resize(image, (width, height), interpolation = cv2.INTER_AREA)
 
 
+def get_current_screen_dimensions(WxH=True):
+    root = Tk()
+    width = root.winfo_screenwidth()
+    height = root.winfo_screenheight()
+    if WxH:
+        return width, height
+    else:
+        return height, width
+
+
+def cv2_sobel_edge_detection(img, blur_kernel=(5, 5)):
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    blurred = cv2.GaussianBlur(gray, blur_kernel, 0)
+    horizontal = cv2.Sobel(blurred, 0, 1, 0, cv2.CV_64F)
+    vertical = cv2.Sobel(blurred, 0, 0, 1, cv2.CV_64F)
+    edges = cv2.bitwise_or(horizontal, vertical)
+    return edges
+
+
+def init_2d_array(rows, cols, value=None):
+    """
+    EXAMPLE:
+    
+    >>> init_2d_array(4,3)
+    [[None, None, None],
+     [None, None, None],
+     [None, None, None],
+     [None, None, None]]
+    """
+    return [ [value for _ in range(cols)] for _ in range(rows)]
+
+
+def get_grid_coordinates(rows, cols):
+    """
+    EXAMPLE:
+
+    >>> get_grid_coordinates(3,2)
+        [(0, 0), (0, 1), (1, 0), (1, 1), (2, 0), (2, 1)]
+
+    """
+    return list(itertools.product([i for i in range(rows)], [i for i in range(cols)]))
+
+
+
 # Check __all__ have all function ones in a while
 # [func for func, _ in inspect.getmembers(H, inspect.isfunction)]
 # [func for func, _ in inspect.getmembers(H, inspect.isclass)]
@@ -488,8 +603,14 @@ __all__ = [
     'get_general_computer_info',
     'get_module_path',
     'cv2_resize_image',
+    'get_current_screen_dimensions',
+    'cv2_sobel_edge_detection',
+    'init_2d_array',
+    'get_grid_coordinates',
     
     # Classes
     'colors_rgb',
     'colors_hex',
+    'Timer',
+    'FPS_Timer',
     ]
