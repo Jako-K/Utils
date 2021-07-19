@@ -22,6 +22,7 @@ import psutil
 import platform
 from tkinter import Tk
 import itertools
+import json
 
 def in_jupyter():
     # Not the cleanest, but gets the job done
@@ -181,8 +182,8 @@ class FPS_Timer:
 
     for _ in range(10):
         time.sleep(0.2)
-        fps_timer.increment_frame_count()
-        display(fps_timer.get_fps())
+        fps_timer.increment()
+        print(fps_timer.get_fps())
 
     """
 
@@ -193,16 +194,20 @@ class FPS_Timer:
         self.fpss = []
         self.precision_decimals = precision_decimals
 
+
     def start(self):
         assert self._start_time is None, "Call `reset()` before you call `start()` again"
         self._start_time = time.time()
 
+
     def _get_elapsed_time(self):
         return round(time.time() - self._start_time, self.precision_decimals)
 
-    def update(self):
+
+    def increment(self):
         self.frame_count += 1
         self.fpss.append(self._get_elapsed_time())
+
 
     def get_fps(self, rounded=3):
         assert self._start_time is not None, "Call `start()` before you call `get_fps()`"
@@ -212,20 +217,25 @@ class FPS_Timer:
             fps = 1 / (self.fpss[-1] - self.fpss[-2])
         return round(fps, 3)
 
+
     def reset(self):
         self._elapsed_time = None
         self.frame_count = 0
         self.fpss = []
 
 
-def show_image(path:str):
-    assert in_jupyter(), "Most be in Jupyer notebook"
+def show_image(path:str, resize_factor:float=1.0):
     assert os.path.exists(path), "Bad path"
+    assert resize_factor > 0, "resize_factor must have a value greater than 0"
+
     if in_jupyter():
-        display(Image.open(path))
+        img = Image.open(path)
+        img = pillow_resize_image(img, resize_factor)
+        display(img)
     else:
         img = cv2.imread(path)
-        plot_cv2_image(img)
+        img = cv2_resize_image(img, resize_factor)
+        cv2_show_image(img)
 
 
 def play_audio(path:str, plot:bool = True):
@@ -462,10 +472,11 @@ def plot_lambda(lambda_f, a:int=None, b:int=None):
     plt.plot(xs, ys)
 
 
-def plot_cv2_image(image, name=""):
+def cv2_show_image(image, name=""):
     cv2.imshow(name, image)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
+
 
 def unfair_coin_flip(p):
     return random.random() > p
@@ -516,11 +527,16 @@ def get_module_path(module):
     return pathlib.Path(module.__file__).resolve().parent
 
 
-def cv2_resize_image(image, scale_percent):
-    scale_percent = scale_percent
-    width = int(image.shape[1] * scale_percent)
-    height = int(image.shape[0] * scale_percent)
+def cv2_resize_image(image, scale_factor):
+    width = int(image.shape[1] * scale_factor)
+    height = int(image.shape[0] * scale_factor)
     return cv2.resize(image, (width, height), interpolation = cv2.INTER_AREA)
+
+
+def pillow_resize_image(image, scale_factor):
+    width = int(image.size[0] * scale_factor)
+    height = int(image.size[1] * scale_factor)
+    return image.resize((width, height), resample=0, box=None)
 
 
 def get_current_screen_dimensions(WxH=True):
@@ -566,48 +582,85 @@ def get_grid_coordinates(rows, cols):
     return list(itertools.product([i for i in range(rows)], [i for i in range(cols)]))
 
 
+def cv2_frame_center(frame, WxH=True):
+    h, w = frame.shape[:2]
+    return  (w//2, h//2) if WxH else (h//2, w//2)
+
+
+def cv2_remove_everything_except_square(image, x1, y1, x2, y2, color=255):
+    mask = np.zeros(image.shape[:2], dtype="uint8")
+    cv2.rectangle(mask, (x1, y1), (x2, y2), color, -1)
+    masked = cv2.bitwise_and(image, image, mask=mask) #Apply mask
+    return masked
+
+
+def read_json(path):
+    assert os.path.exists(path), "Bad path"
+    assert (path[-5:] == ".json"), "Bad extension, expected .json"
+
+    f = open(path)
+    data = json.load(f)
+    f.close()
+    
+    return data
+
 
 # Check __all__ have all function ones in a while
 # [func for func, _ in inspect.getmembers(H, inspect.isfunction)]
 # [func for func, _ in inspect.getmembers(H, inspect.isclass)]
 
 __all__ = [
-    # Functions
-    'copy_folder',
-    'expand_jupyter_screen',
-    'extract_file_extension',
-    'get_gpu_memory_info',
-    'get_imports',
-    'in_jupyter',
+
+    # Images
+    'show_image',
+    'cv2_show_image',
+    'cv2_frame_center',
+    'cv2_remove_everything_except_square',
+    'pillow_resize_image',
+    'cv2_resize_image',
+    'cv2_sobel_edge_detection',
+
+    # Files, folders and I/O
     'load_pickle_file',
-    'play_audio',
-    'plot_average_uncertainty',
+    'extract_file_extension',
+    'copy_folder',
     'read_txt_file',
     'save_as_pickle_file',
-    'show_image',
-    'sturges_rule',
-    'to_bins',
     'write_to_file',
-    'scientific_notation',
-    'save_plt_plot',
-    'plot_lambda',
-    'get_gpu_info',
-    'plot_cv2_image',
-    'unfair_coin_flip',
+    'read_json',
+    'number_of_files_in',
+    'get_module_path',
     'get_all_available_import_functions',
     'get_all_available_import_classes',
     'get_current_working_directory',
     'get_changed_file_name',
-    'number_of_files_in',
+
+    # General info
+    'get_gpu_memory_info',
+    'get_imports',
     'on_windows',
     'get_general_computer_info',
-    'get_module_path',
-    'cv2_resize_image',
+    'get_gpu_info',
     'get_current_screen_dimensions',
-    'cv2_sobel_edge_detection',
+
+    # Plot
+    'plot_average_uncertainty',
+    'save_plt_plot',
+    'plot_lambda',
+
+    # Jupyter notebook
+    'expand_jupyter_screen',
+    'in_jupyter',
+    'play_audio',
+
+    # Random
+    'scientific_notation',
+    'sturges_rule',
+    'to_bins',
+    'unfair_coin_flip',
     'init_2d_array',
     'get_grid_coordinates',
-    
+
     # Classes
     'colors_rgb',
     'colors_hex',
