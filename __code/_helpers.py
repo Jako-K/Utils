@@ -10,7 +10,7 @@ import os
 import time
 from datetime import timedelta
 import matplotlib.pyplot as plt
-from PIL import Image
+from PIL import Image, ImageColor
 import pathlib
 import shutil
 import pickle
@@ -23,6 +23,8 @@ import platform
 from tkinter import Tk
 import itertools
 import json
+import ast
+import requests
 
 def in_jupyter():
     # Not the cleanest, but gets the job done
@@ -122,12 +124,14 @@ class Timer:
 
     """
 
-    def __init__(self, time_unit="seconds", precision_decimals=3):
+    def __init__(self, time_unit="seconds", start_on_create=False, precision_decimals=3):
         self._start_time = None
         self._elapsed_time = None
         self._is_running = False
         self._unit = None; self.set_unit(time_unit)
         self.precision_decimals = precision_decimals
+        if start_on_create:
+            self.start()
 
     def start(self):
         if self._start_time is not None:
@@ -285,19 +289,26 @@ def load_pickle_file(path: str):
 
 
 class _ColorRGB:
-    def __init__(self):
-        self.blue = (31, 119, 180)
-        self.orange = (255, 127, 14)
-        self.green = (44, 160, 44)
-        self.red = (214, 39, 40)
-        self.purple = (148, 103, 189)
-        self.brown = (140, 86, 75)
-        self.pink = (227, 119, 194)
-        self.grey = (127, 127, 127)
-        self.white = (225, 255, 255)
+    blue = (31, 119, 180)
+    orange = (255, 127, 14)
+    green = (44, 160, 44)
+    red = (214, 39, 40)
+    purple = (148, 103, 189)
+    brown = (140, 86, 75)
+    pink = (227, 119, 194)
+    grey = (127, 127, 127)
+    white = (225, 255, 255)
+    all_colors = ['blue', 'orange', 'green', 'red', 'purple', 'brown', 'pink', 'grey', 'white']
 
-    def random_color(self):
-        return [random.randint(0, 255) for i in range(3)]
+    def random_color(self, only_predefined_colors=True):
+        if only_predefined_colors:
+            return getattr(self, random.choice(self.all_colors))
+        else:
+            return [random.randint(0, 255) for i in range(3)]
+
+    def random_not_to_bright_color(self):
+        return [random.randint(0, 150) for i in range(3)]
+
 
     def is_legal(self, color):
         for color_channel in color:
@@ -308,15 +319,14 @@ colors_rgb = _ColorRGB()
 
 
 class _ColorHEX:
-    def __init__(self):
-        self.blue = "#1f77b4"
-        self.orange = "#ff7f0e"
-        self.green = "#2ca02c"
-        self.red = "#d62728"
-        self.purple = "#9467bd" 
-        self.brown = "#8c564b"
-        self.pink = "#e377c2"
-        self.grey =  "#7f7f7f"
+    blue = "#1f77b4"
+    orange = "#ff7f0e"
+    green = "#2ca02c"
+    red = "#d62728"
+    purple = "#9467bd" 
+    brown = "#8c564b"
+    pink = "#e377c2"
+    grey =  "#7f7f7f"
 colors_hex = _ColorHEX()
 
 
@@ -345,7 +355,7 @@ def get_imports(request="all"):
     import wandb
     import torch
     import torch.nn as nn
-    import utils.torch_helpers as T
+    import utilsm.torch_helpers as T
     import torch.nn.functional as F\
     """
     vision_imp = \
@@ -446,7 +456,7 @@ def write_to_file(file_path:str, write_string:str, only_txt:bool = True):
         assert extract_file_extension(file_path) == ".txt", "´only_txt´ = true, but file type is not .txt"
     
     file = open(file_path, mode="a")
-    print(write_string, file=file)
+    print(write_string, file=file, end="")
     file.close()
 
 
@@ -472,10 +482,18 @@ def plot_lambda(lambda_f, a:int=None, b:int=None):
     plt.plot(xs, ys)
 
 
-def cv2_show_image(image, name=""):
-    cv2.imshow(name, image)
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
+def cv2_show_image(image, resize_factor=1.0, name=""):
+    assert resize_factor > 0, "resize_factor must have a value greater than 0"
+
+    if in_jupyter():
+        img = cv2_image_to_pillow(image)
+        img = pillow_resize_image(img, resize_factor)
+        display(img)
+    else:
+        img = cv2_resize_image(image, resize_factor)
+        cv2.imshow(name, img)
+        cv2.waitKey(0)
+        cv2.destroyAllWindows()
 
 
 def unfair_coin_flip(p):
@@ -494,13 +512,13 @@ def get_current_working_directory():
     return str(pathlib.Path().absolute())
 
 
-def get_changed_file_name(file_path, new_file_name, path_separator="\\", new_file_extension=""):
+def get_changed_file_name(file_path, new_file_name, new_file_extension="", path_separator="\\"):
     assert os.path.exists(file_path), "Bad path"
     assert type(new_file_extension) == str, "new_file_extension is not of type str"
 
     # Just a pain to deal with with backslashes
     if path_separator == "\\":
-        file_path = file_path.replace(path_separator, "/")
+        file_path = file_path.replace("\\", "/")
 
     # Make all the necesarry string slices
     rear_dot_index = file_path.rfind(".")
@@ -605,6 +623,145 @@ def read_json(path):
     return data
 
 
+def string_to_dict(string:str):
+    return ast.literal_eval(string)
+
+
+def cv2_image_to_pillow(image):
+    img = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    return Image.fromarray(img)
+
+def pillow_image_to_cv2(image, RGB2BGR=True):
+    img_cv2 = np.asarray(image)
+    return img_cv2 if not RGB2BGR else cv2.cvtColor(img_cv2, cv2.COLOR_RGB2BGR)
+
+
+def cv2_draw_bounding_boxes(image, p1, p2, label=None, conf=None, color="random", line_thickness=2, text_color=(200,200,200)):
+    """
+    EXAMPLE:
+    cv2_draw_bounding_boxes(cv2_loaded_image, (438, 140), (822, 583), label="Cat", conf=0.7, color=(0,0,255))
+    """
+    
+    if color == "random": 
+        color = colors_rgb.random_not_to_bright_color()
+    elif color[0] == "#":
+        color = hex_color_to_rgb(color)
+    
+    cv2.rectangle(image, p1, p2, color=color, thickness=line_thickness)
+    
+    text = ""
+    if label:
+        text += label
+    if conf:
+        if label:
+            text += ": "
+        text += str(conf*100) + "%"
+    
+    if label or conf:
+        new_p2 = (p1[0]+10*len(text), p1[1]-15)
+        cv2.rectangle(image, p1, new_p2, color=color, thickness=-1)
+        cv2.putText(image, text, (p1[0], p1[1]-2), cv2.FONT_HERSHEY_DUPLEX, 0.5, text_color, 1, cv2.LINE_AA)
+
+
+def hex_color_to_rgb(hex_color):
+    return ImageColor.getcolor(hex_color, "RGB")
+
+
+def string_to_list(string_list, element_type=None):
+    """
+    EXAMPLE 1:
+    ['198', '86', '292', '149'] = string_to_list('[198, 86, 292, 149]')
+    
+    EXAMPLE 2:
+    [198, 86, 292, 149] = string_to_list('[198, 86, 292, 149]', element_type=int)
+    """
+    
+    to_list = string_list.strip('][').split(', ')
+    if element_type:
+        to_list = list(map(element_type, to_list))
+    return to_list
+
+
+
+def get_image_size(path, WxH=True):
+    assert os.path.exists(path), "Bad path"
+    height, width = cv2.imread(path).shape[:2]
+    return (width, height) if WxH else (height, width)
+
+
+def normal_bb_coordinates_to_yolo_format(bb, img_width, img_height, label, xywh=False):
+    if not xywh:
+        x1, y1, x2, y2 = bb
+        bb_width, bb_height = (x2-x1), (y2-y1)
+    else:
+        x1, y1, bb_width, bb_height = bb
+        
+    # Width and height
+    bb_width_norm = bb_width/img_width
+    bb_height_norm = bb_height/img_height
+    
+    # Center
+    bb_center_x_norm =  (x1 + bb_width/2) / img_width
+    bb_center_y_norm =  (y1 + bb_height/2) / img_height
+    
+    # Yolo format --> |class_name center_x center_y width height|.txt  -  NOT included the two '|'
+    string = str(label)
+    for s in [bb_center_x_norm, bb_center_y_norm, bb_width_norm, bb_height_norm]:
+        string += " " + str(s)
+        
+    return string
+
+
+def yolo_draw_bbs_path(yolo_image_path, yolo_bb_path, color = (0,0,255)):
+    assert os.path.exists(yolo_image_path), "Bad path"
+    image = cv2.imread(yolo_image_path)
+    dh, dw, _ = image.shape
+
+    fl = open(yolo_bb_path, "r")
+    data = fl.readlines()
+    fl.close()
+
+    for dt in data:
+        _, x, y, w, h = map(float, dt.split(' '))
+        l = int((x - w / 2) * dw)
+        r = int((x + w / 2) * dw)
+        t = int((y - h / 2) * dh)
+        b = int((y + h / 2) * dh)
+
+        if l < 0: l = 0
+        if r > dw - 1: r = dw - 1
+        if t < 0: t = 0
+        if b > dh - 1: b = dh - 1
+
+        cv2.rectangle(image, (l, t), (r, b), color, 2)
+    return image
+
+
+def yolo_draw_single_bb_cv2(image_cv2, x, y, w, h, color=(0,0,255)):
+    dh, dw, _ = image_cv2.shape
+
+    l = int( (x - w/2) * dw)
+    r = int( (x + w/2) * dw)
+    t = int( (y - h/2) * dh)
+    b = int( (y + h/2) * dh)
+
+    if l < 0: l = 0
+    if r > dw - 1: r = dw - 1
+    if t < 0: t = 0
+    if b > dh - 1: b = dh - 1
+
+    cv2.rectangle(image_cv2, (l, t), (r, b), color, 2)
+    return image_cv2
+
+
+def get_image_from_url(url:str, return_type="cv2"):
+    assert return_type in ["pillow", "cv2"], "`return_type` not in ['pillow', 'cv2']"
+    if return_type == "cv2":
+        return np.asarray(Image.open(requests.get(url, stream=True).raw))
+    elif return_type == "pillow":
+        return Image.open(requests.get(url, stream=True).raw)
+
+
 # Check __all__ have all function ones in a while
 # [func for func, _ in inspect.getmembers(H, inspect.isfunction)]
 # [func for func, _ in inspect.getmembers(H, inspect.isclass)]
@@ -619,6 +776,19 @@ __all__ = [
     'pillow_resize_image',
     'cv2_resize_image',
     'cv2_sobel_edge_detection',
+    'cv2_image_to_pillow',
+    'pillow_image_to_cv2',
+    'cv2_draw_bounding_boxes',
+    'hex_color_to_rgb',
+    'get_image_size',
+    'get_image_from_url',
+
+
+    # YOLO
+    'normal_bb_coordinates_to_yolo_format',
+    'yolo_draw_bbs_path',
+    'yolo_draw_single_bb_cv2',
+
 
     # Files, folders and I/O
     'load_pickle_file',
@@ -653,17 +823,21 @@ __all__ = [
     'in_jupyter',
     'play_audio',
 
-    # Random
+    # Formatting
     'scientific_notation',
-    'sturges_rule',
-    'to_bins',
-    'unfair_coin_flip',
-    'init_2d_array',
-    'get_grid_coordinates',
+    'string_to_dict',
+    'string_to_list',
 
     # Classes
     'colors_rgb',
     'colors_hex',
     'Timer',
     'FPS_Timer',
+
+    # Random
+    'sturges_rule',
+    'to_bins',
+    'unfair_coin_flip',
+    'init_2d_array',
+    'get_grid_coordinates',
     ]
