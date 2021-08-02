@@ -87,22 +87,31 @@ def seed_torch(seed=12, deterministic=True):
     torch.cuda.manual_seed(seed)
 
 
-def plot_tensor_image(image_tensor:torch.tensor, rows:int = 1, cols:int = 1, figsize=(15,10)):
+def show_tensor_image(image_tensor:torch.tensor, rows:int = 1, cols:int = 1, figsize=(15,10)):
     """
+    Can show multiple tensor images.
+
     param image_tensor: (samples, channels, width, height)
     """
     assert rows*cols >= 1, "rows <= 1 and cols <=1"
     assert rows*cols <= image_tensor.shape[0], f"Not enough images for {rows} rows and {cols} cols"
+    assert len(image_tensor.shape) == 4, f"Expected shape (samples, channels, width, height) recieved {image_tensor.shape}. If greyscale --> .unsqueeze(1)"
     assert image_tensor.shape[2] * image_tensor.shape[3] > 0, "width <= 1 and height <=1"
+    
+
     if image_tensor.shape[1] > 3:
         warnings.warn("Cannot handle alpha")
     image_tensor = image_tensor.detach().cpu()
 
+    if sum(image_tensor > 1.0).sum() > 0:
+        warnings.warn("Detected pixel values > 1, assuming image_tensor is in [0,255] format and normalize to [0,1]")
+        image_tensor = image_tensor/255
 
     is_grayscale = True if image_tensor.shape[1] == 1 else False
     
     _, axs = plt.subplots(rows, cols, figsize=figsize)
-    coordinates = list(itertools.product([i for i in range(rows)], [i for i in range(cols)])) # [(0, 0), (0, 1), (0, 2), (1, 0) ... ]
+    # coordinates = [(0, 0), (0, 1), (0, 2), (1, 0) ... ]
+    coordinates = list(itertools.product([i for i in range(rows)], [i for i in range(cols)]))
 
     for i in range(rows*cols):
         (row, col) = coordinates[i]
@@ -147,6 +156,10 @@ def acc_metric(pred_logits:torch.tensor, labels:torch.tensor):
     
     preds = torch.nn.functional.softmax(pred_logits, dim=1).argmax(dim=1)
     return (preds == labels).detach().float().mean().item()
+
+
+def get_batch(dataloader):
+    return next(iter(dataloader))
 
 
 def single_forward(model, dl):
@@ -463,10 +476,11 @@ __all__ =[
     'get_model_save_name',
     'get_parameter_count',
     'plot_scheduler',
-    'plot_tensor_image',
+    'show_tensor_image',
     'seed_torch',
     'single_forward',
     'wandb_save_as_onnx_model',
+    'get_batch',
 
     # Classes
     'ArcFaceClassifier',

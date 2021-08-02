@@ -25,6 +25,9 @@ import itertools
 import json
 import ast
 import requests
+import math
+import subprocess
+import os
 
 def in_jupyter():
     # Not the cleanest, but gets the job done
@@ -61,13 +64,11 @@ def get_gpu_memory_info():
     """ Return the systems total amount of VRAM along with current used/free VRAM"""
     # TODO: check if ´nvidia-smi´ is installed 
     # TODO: Enable multi-gpu setup i.e. cuda:0, cuda:1 ...
-    import subprocess as sp
-    import os
     
     def get_info(command):
         assert command in ["free", "total"]
         command = f"nvidia-smi --query-gpu=memory.{command} --format=csv"
-        info = output_to_list(sp.check_output(command.split()))[1:]
+        info = output_to_list(subprocess.check_output(command.split()))[1:]
         values = [int(x.split()[0]) for i, x in enumerate(info)]
         return values[0]
         
@@ -104,6 +105,7 @@ def get_general_computer_info():
 
 
 def expand_jupyter_screen(percentage:int = 75):
+    assert in_jupyter(), "Most be in Jupyer notebook"
     assert percentage in [i for i in range(50,101)], "Bad argument" # Below 50 just seems odd, assumed to be a mistake
     from IPython.core.display import display, HTML
     argument = "<style>.container { width:" + str(percentage) + "% !important; }</style>"
@@ -194,7 +196,6 @@ class FPS_Timer:
     def __init__(self, precision_decimals=3):
         self._start_time = None
         self._elapsed_time = None
-        self.frame_count = 0
         self.fpss = []
         self.precision_decimals = precision_decimals
 
@@ -209,9 +210,10 @@ class FPS_Timer:
 
 
     def increment(self):
-        self.frame_count += 1
         self.fpss.append(self._get_elapsed_time())
 
+    def get_frame_count(self):
+        return len(self.fpss)
 
     def get_fps(self, rounded=3):
         assert self._start_time is not None, "Call `start()` before you call `get_fps()`"
@@ -224,7 +226,6 @@ class FPS_Timer:
 
     def reset(self):
         self._elapsed_time = None
-        self.frame_count = 0
         self.fpss = []
 
 
@@ -285,9 +286,6 @@ def load_pickle_file(path: str):
     with open(path, 'rb') as pickle_file:
         return pickle.load(pickle_file)
 
-
-
-
 class _ColorRGB:
     blue = (31, 119, 180)
     orange = (255, 127, 14)
@@ -328,7 +326,6 @@ class _ColorHEX:
     pink = "#e377c2"
     grey =  "#7f7f7f"
 colors_hex = _ColorHEX()
-
 
 def copy_folder(from_path, to_path):
     assert not os.path.exists(to_path), "shutil don't allow ´to_path´ to already exist"
@@ -417,7 +414,6 @@ def extract_file_extension(file_name:str):
 	return ''.join(pathlib.Path(file_name).suffixes)
 
 
-
 def plot_average_uncertainty(data, stds=2):
     """
     data: np.array with shape (samples X repetitions)
@@ -443,7 +439,7 @@ def plot_average_uncertainty(data, stds=2):
 
 def to_bins(target, bins="auto"):
     if bins == "auto":
-        _, bins = H.sturges_rule(target)
+        _, bins = sturges_rule(target)
     
     count, division = np.histogram(target, bins=bins)
     groups = np.digitize(target, division)
@@ -629,7 +625,11 @@ def string_to_dict(string:str):
 
 def cv2_image_to_pillow(image):
     img = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-    return Image.fromarray(img)
+    try:
+        return Image.fromarray(img)
+    except TypeError:
+        # Wrong format. Gets 0-1 expects 0-255 8bit int.
+        im = Image.fromarray((img * 255).astype(np.uint8)) 
 
 def pillow_image_to_cv2(image, RGB2BGR=True):
     img_cv2 = np.asarray(image)
@@ -655,7 +655,7 @@ def cv2_draw_bounding_boxes(image, p1, p2, label=None, conf=None, color="random"
     if conf:
         if label:
             text += ": "
-        text += str(conf*100) + "%"
+        text += str( round(conf*100, 3) ) + "%"
     
     if label or conf:
         new_p2 = (p1[0]+10*len(text), p1[1]-15)
@@ -762,6 +762,20 @@ def get_image_from_url(url:str, return_type="cv2"):
         return Image.open(requests.get(url, stream=True).raw)
 
 
+
+def int_sign(x:int):
+    return math.copysign(1, x)
+
+
+def pandas_standardize_df(df):
+    df_standardized = (df - df.mean()) / df.std()
+    assert np.isclose(df_standardized.mean(), 0), "mean(std) ~= 0"
+    assert np.isclose(df_standardized.std(), 1), "std(std) ~= 1"
+    return df_standardized
+
+
+
+
 # Check __all__ have all function ones in a while
 # [func for func, _ in inspect.getmembers(H, inspect.isfunction)]
 # [func for func, _ in inspect.getmembers(H, inspect.isclass)]
@@ -840,4 +854,8 @@ __all__ = [
     'unfair_coin_flip',
     'init_2d_array',
     'get_grid_coordinates',
+    'int_sign',
+    'pandas_standardize_df'
+
+
     ]

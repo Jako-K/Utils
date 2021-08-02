@@ -20,9 +20,9 @@ import os
 
 
 # Settings
-new_dataset = False
-project_display_name = "Mask Detection Dataset"
-project_folder_name = "mask-detection-dataset"
+new_dataset = True
+project_display_name = "Mask Detection Dataset - 3 classes"
+project_folder_name = "mask-detection-dataset-3class"
 upload_folder_path = "C:/Users/JK/Desktop/datasets/mask_dataset_yolo"
 
 
