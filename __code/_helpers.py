@@ -28,6 +28,8 @@ import requests
 import math
 import subprocess
 import os
+import calendar
+import matplotlib
 
 def in_jupyter():
     # Not the cleanest, but gets the job done
@@ -307,12 +309,19 @@ class _ColorRGB:
     def random_not_to_bright_color(self):
         return [random.randint(0, 150) for i in range(3)]
 
+    def from_int(self, i:int):
+        assert len(self.all_colors) > i, f"There's only {len(self.all_colors)} colors, received {i}"
+        color = self.all_colors[i]
+        return getattr(self, color)
 
     def is_legal(self, color):
         for color_channel in color:
             if not(0 <= color_channel <= 255):
                 return False
         return True
+
+
+
 colors_rgb = _ColorRGB()
 
 
@@ -368,7 +377,7 @@ def get_imports(request="all"):
     """
     # All around
     import matplotlib.pyplot as plt
-    import seaborn; seaborn.set_style("darkgrid")
+    import seaborn as sns; sns.set_style("darkgrid")
     from tqdm.notebook import tqdm
     import pandas as pd
     import numpy as np
@@ -381,7 +390,7 @@ def get_imports(request="all"):
     # Path and file stuff
     from pathlib import Path
     import pickle
-    import glob
+    from glob import glob
     import sys
     import os\
     """
@@ -663,9 +672,12 @@ def cv2_draw_bounding_boxes(image, p1, p2, label=None, conf=None, color="random"
         cv2.putText(image, text, (p1[0], p1[1]-2), cv2.FONT_HERSHEY_DUPLEX, 0.5, text_color, 1, cv2.LINE_AA)
 
 
-def hex_color_to_rgb(hex_color):
+def hex_to_rgb(hex_color):
     return ImageColor.getcolor(hex_color, "RGB")
 
+def rgb_to_hex(rgb_color):
+    assert colors_rgb.is_legal(rgb_color), "Not a valid RGB color"
+    return "#" + '%02x%02x%02x' % rgb_color
 
 def string_to_list(string_list, element_type=None):
     """
@@ -774,6 +786,12 @@ def pandas_standardize_df(df):
     return df_standardized
 
 
+def get_month_names(abbreviations=False):
+    if abbreviations:
+        return [calendar.month_abbr[i].lower() for i in range(1,13)]
+    else:
+        return [calendar.month_name[i].lower() for i in range(1,13)]
+
 
 
 # Check __all__ have all function ones in a while
@@ -793,16 +811,13 @@ __all__ = [
     'cv2_image_to_pillow',
     'pillow_image_to_cv2',
     'cv2_draw_bounding_boxes',
-    'hex_color_to_rgb',
     'get_image_size',
     'get_image_from_url',
-
 
     # YOLO
     'normal_bb_coordinates_to_yolo_format',
     'yolo_draw_bbs_path',
     'yolo_draw_single_bb_cv2',
-
 
     # Files, folders and I/O
     'load_pickle_file',
@@ -855,7 +870,17 @@ __all__ = [
     'init_2d_array',
     'get_grid_coordinates',
     'int_sign',
-    'pandas_standardize_df'
+    'pandas_standardize_df',
+    'hex_to_rgb',
+    'rgb_to_hex',
 
+    # Date and time
+    'get_month_names',
 
     ]
+
+
+
+
+if __name__ == "__main__":
+    print(rgb_to_hex((200,0,0)))
