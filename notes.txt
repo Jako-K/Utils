@@ -1,9 +1,0 @@
-# Justification
-The whole __code shenanigans is to avoid namespace pollution i.e. numpy being accessible when importing: utils.np
-The double underscore as opposed to single one is to prevent jupyter notebook from suggestsing _code when using autocomplete
-In _helpers.py user warnings are temporarily turned of while importing torchaudio to silence some warnings I cannot prevent on windows at the moment
-
-# TODO
-Find a better way to avoid namespace pollution, perhaps through the __init__ ?
-Find a proper fix for torchaudio's warnings
-Write docs for all functions and find out if there's some go to conventions for during so

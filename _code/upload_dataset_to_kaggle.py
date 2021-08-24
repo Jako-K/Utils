@@ -5,7 +5,7 @@ Super basic interface with Kaggle's dataset API.
 
 INTENDED USE:
 1.) set `project_display_name`, `project_folder_name` and `upload_folder_path`
-2.) run this file: upload_dataset_to_kaggle.py
+2.) run this file i.e. upload_dataset_to_kaggle.py in a Python interpreter
 
 # EXAMPLE:
 project_display_name = "Mask Detection Dataset"
@@ -27,7 +27,7 @@ upload_folder_path = "C:/Users/JK/Desktop/datasets/mask_dataset_yolo"
 
 
 # Checks
-assert project_folder_name.find("_") == -1, "Kaggle dosn't accept underscores"
+assert project_folder_name.find("_") == -1, "Kaggle dosn't accept underscores, use '-' instead"
 assert not os.path.exists("./dataset-metadata.json"), "This should have been deleted"
 
 
