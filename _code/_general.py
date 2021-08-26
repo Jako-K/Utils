@@ -1,5 +1,5 @@
 # TODO add unit tests
-# TODO add intelligent search function which return possible matches and where to find them
+# TODO add an intelligent search function which returns possible matches and where to find them.
 #  e.g. search("gpu") --> ["system_info.get_vram_info()", "get_gpu_info()"]
 
 # All around
@@ -1068,7 +1068,8 @@ class IO:
         """ Save matplotlib.pyplot figure to disk. The quality can be controlled with `dpi`"""
         # Checks
         type_check.assert_types([save_path, fig, dpi], [str, matplotlib.figure.Figure, int], [0, 1, 0])
-        if (extension := io.extract_file_extension(save_path)) not in [".png", ".jpg", ".pdf"]:
+        extension = io.extract_file_extension(save_path)
+        if extension not in [".png", ".jpg", ".pdf"]:
             raise ValueError(f"Expected file extension to be in ['png', 'jpg', 'pdf'],"
                              f" but received `{extension}` extension")
         if fig is None:
