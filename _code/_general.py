@@ -72,7 +72,7 @@ class TypeChecks:
             is_ok = (to_check is None) or is_ok
 
         if not is_ok:
-            raise TypeError(f"Expected type `{expected_type}`, received type `{type(to_check)}`")
+            raise TypeError(f"Expected type `{expected_type}`, but received type `{type(to_check)}`")
 
     # TODO Make assert list dict instead of 2 lists
     def assert_types(self, to_check:list, expected_types:list, allow_nones:list=None):
@@ -1331,232 +1331,6 @@ class RMSELoss(nn.Module):
         return loss
 
 
-def seed_torch(seed:int=12, deterministic:bool=False):
-    """
-    Function description:
-    Seed python, random, os, bumpy, torch and torch.cuda.
-
-    @param seed: Used to seed everything
-    @param deterministic: Set `torch.backends.cudnn.deterministic`. NOTE can drastically increase run time if True
-
-
-    """
-    type_check.assert_types([seed, deterministic], [int, bool])
-
-
-    torch.backends.cudnn.deterministic = deterministic
-    random.seed(seed)
-    os.environ['PYTHONHASHSEED'] = str(seed)
-    np.random.seed(seed)
-    torch.manual_seed(seed)
-    torch.cuda.manual_seed(seed)
-
-
-def show_tensor_image(image_tensor:torch.Tensor, rows:int = 1, cols:int = 1, fig_size:matplotlib.figure.Figure=(15, 10)):
-    """
-    Function description:
-    Can show multiple tensor images.
-
-    @param image_tensor: (samples, channels, width, height)
-    @param rows: Number of rows in the plot
-    @param cols: Number of columns in the plot
-    @param fig_size: matplotlib.pyplot figure size (width x height)
-    """
-    # Tests
-    type_check.assert_types([image_tensor, rows, cols, fig_size], [torch.Tensor, int, int, matplotlib.figure.Figure])
-    if (rows < 1) or (cols < 1):
-        raise ValueError("Both `rows` and `cols` must be greater than or equal to 1")
-    if rows*cols > image_tensor.shape[0]:
-        raise ValueError(f"Not enough images for {rows} rows and {cols} cols")
-    if len(image_tensor.shape) != 4:
-        raise ValueError(f"Expected shape (samples, channels, width, height) received {image_tensor.shape}. "
-                         f"If greyscale try `image_tensor.unsqueeze(1)`")
-    if image_tensor.shape[1] > 3:
-        warnings.warn("Cannot handle alpha channels, they will be ignored")
-
-    # Just to be sure
-    image_tensor = image_tensor.detach().cpu()
-
-    # If any_pixel_value > 1 --> assuming image_tensor is in [0,255] format and will normalize to [0,1]
-    if sum(image_tensor > 1.0).sum() > 0:
-        image_tensor = image_tensor / 255
-
-    # Prepare for loop
-    is_grayscale = True if image_tensor.shape[1] == 1 else False
-    _, axs = plt.subplots(rows, cols, figsize=fig_size)
-    # coordinates = [(0, 0), (0, 1), (0, 2), (1, 0) ... ]
-    coordinates = list(itertools.product([i for i in range(rows)], [i for i in range(cols)]))
-
-    for i in range(rows * cols):
-        (row, col) = coordinates[i]
-
-        # Deal with 1D or 2D plot i.e. multiple columns and/or rows
-        if rows * cols == 1:
-            ax = axs
-        else:
-            ax = axs[row, col] if (rows > 1 and cols > 1) else axs[i]
-
-        # Format shenanigans
-        image = image_tensor[i].permute(1, 2, 0).numpy()
-        if np.issubdtype(image.dtype, np.float32):
-            image = np.clip(image, 0, 1)
-
-        # Actual plots
-        if is_grayscale:
-            ax.imshow(image, cmap="gray")
-        else:
-            ax.imshow(image)
-        ax.axis("off")
-    plt.show()
-
-
-def get_device():
-    # TODO: Handle multi GPU setup ?
-    return torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-
-
-def get_parameter_count(model:nn.Module, only_trainable:bool = False, decimals:int = 3):
-    """ Number of total or trainable parameters in a pytorch model i.e. nn.Module child """
-    type_check.assert_types([model, only_trainable, decimals], [nn.Module, bool, int])
-    if decimals < 1:
-        raise ValueError(f"Expected `decimals` >= 1, but received {decimals}")
-
-    if only_trainable:
-        temp = sum(p.numel() for p in model.parameters())
-    else:
-        temp = sum(p.numel() for p in model.parameters() if p.requires_grad)
-    return format(temp, f".{decimals}E")
-
-
-def metric_acc(pred_logits:torch.Tensor, targets:torch.Tensor):
-    """
-    Function description:
-    Calculate the accuracy of logits
-
-    @param pred_logits: Prediction logits used to calculate the accuracy. Expected shape: (samples, logits)
-    @param targets: Ground truth targets (ints)
-    """
-    type_check.assert_types([pred_logits, targets], [torch.Tensor, torch.Tensor])
-    if pred_logits.shape[0] != targets.shape[0]:
-        raise ValueError("Dimension mismatch between `pred_logits` and `targets`")
-
-    preds = torch.nn.functional.softmax(pred_logits, dim=1).argmax(dim=1)
-    return (preds == targets).detach().float().mean().item()
-
-
-def get_batch(dataloader:torch.utils.data.DataLoader):
-    """ Get the next batch """
-    type_check.assert_type(dataloader, torch.utils.data.DataLoader)
-    return next(iter(dataloader))
-
-
-def get_model_save_name(to_add:dict, model_name:str, separator:str = "  .  ", include_time:bool = True):
-
-    """
-    Function description:
-    Adds useful information to model save file such as date, time and metrics.
-
-    Example:
-    >> get_model_save_name( {"valid_loss":valid_mean}, "model.pth", "  |  ")
-    "time 17.25.32 03-05-2021  |  valid_loss 0.72153  |  model_name.pth"
-
-    @param to_add: Dictionary which contain information which will be added to the model save name e.g. loss
-    @param model_name: Actual name of the model. Will be the last thing appended to the save path
-    @param separator: The separator symbol used between information e.g. "thing1 <separator> thing2 <separator> ...
-    @param include_time: If true, include full date and time  e.g. 17.25.32 03-05-2021 <separator> ...
-    """
-    # Checks
-    type_check.assert_types([to_add, model_name, separator, include_time], [dict, str, str, True])
-    if system_info.on_windows() and (separator in system_info.windows_illegal_file_name_character):
-        raise ValueError(f"Received illegal separator symbol `{separator}`. Windows don't allow the "
-                         f"following characters in a filename: {system_info.windows_illegal_file_name_character}")
-
-    return_string = ""
-    if include_time:
-        time_plus_date = datetime.datetime.now().strftime('%H.%M.%S %d-%m-%Y')
-        return_string = f"time {time_plus_date}{separator}" if include_time else ""
-
-    # Adds everything from to_add dict
-    for key, value in to_add.items():
-        if type(value) in [float, np.float16, np.float32, np.float64]:
-            value = f"{value:.5}".replace("+", "") # Rounding to 5 decimals
-        return_string += str(key) + " " + str(value) + separator
-
-    return_string += model_name
-    if system_info.on_windows():
-        if len(return_string) > 256:
-            raise RuntimeError(f"File name is to long. Windows only allow 256 character, "
-                               f"but attempted save file with `{len(return_string)} characters`")
-
-    return return_string
-
-
-# TODO refactor and add checks
-def yolo_bb_from_normal_bb(bb, img_width, img_height, label, xywh=False):
-    if not xywh:
-        x1, y1, x2, y2 = bb
-        bb_width, bb_height = (x2 - x1), (y2 - y1)
-    else:
-        x1, y1, bb_width, bb_height = bb
-
-    # Width and height
-    bb_width_norm = bb_width / img_width
-    bb_height_norm = bb_height / img_height
-
-    # Center
-    bb_center_x_norm = (x1 + bb_width / 2) / img_width
-    bb_center_y_norm = (y1 + bb_height / 2) / img_height
-
-    # Yolo format --> |class_name center_x center_y width height|.txt  -  NOT included the two '|'
-    string = str(label)
-    for s in [bb_center_x_norm, bb_center_y_norm, bb_width_norm, bb_height_norm]:
-        string += " " + str(s)
-
-    return string
-
-# TODO refactor and add checks
-def yolo_draw_bbs_path(yolo_image_path, yolo_bb_path, color=(0, 0, 255)):
-    assert os.path.exists(yolo_image_path), "Bad path"
-    image = cv2.imread(yolo_image_path)
-    dh, dw, _ = image.shape
-
-    fl = open(yolo_bb_path, "r")
-    data = fl.readlines()
-    fl.close()
-
-    for dt in data:
-        _, x, y, w, h = map(float, dt.split(' '))
-        l = int((x - w / 2) * dw)
-        r = int((x + w / 2) * dw)
-        t = int((y - h / 2) * dh)
-        b = int((y + h / 2) * dh)
-
-        if l < 0: l = 0
-        if r > dw - 1: r = dw - 1
-        if t < 0: t = 0
-        if b > dh - 1: b = dh - 1
-
-        cv2.rectangle(image, (l, t), (r, b), color, 2)
-    return image
-
-# TODO refactor and add checks. Also merge this with `yolo_draw_bbs_path` seems wasteful to have both
-def yolo_draw_single_bb_cv2(image_cv2, x, y, w, h, color=(0, 0, 255)):
-    dh, dw, _ = image_cv2.shape
-
-    l = int((x - w / 2) * dw)
-    r = int((x + w / 2) * dw)
-    t = int((y - h / 2) * dh)
-    b = int((y + h / 2) * dh)
-
-    if l < 0: l = 0
-    if r > dw - 1: r = dw - 1
-    if t < 0: t = 0
-    if b > dh - 1: b = dh - 1
-
-    cv2.rectangle(image_cv2, (l, t), (r, b), color, 2)
-    return image_cv2
-
-
 class _Templates:
 
     @staticmethod
@@ -1803,19 +1577,234 @@ class Pytorch:
     arcface_loss = arcface_loss
     RMSELoss = RMSELoss
 
-    # Utils
-    seed_torch = seed_torch
-    show_tensor_image = show_tensor_image
-    get_device = get_device
-    get_parameter_count = get_parameter_count
-    metric_acc = metric_acc
-    get_batch = get_batch
-    get_model_save_name = get_model_save_name
+    # Helpers
+    @staticmethod
+    def seed_torch(seed: int = 12, deterministic: bool = False):
+        """
+        Function description:
+        Seed python, random, os, bumpy, torch and torch.cuda.
 
-    # Yolo
-    yolo_bb_from_normal_bb = yolo_bb_from_normal_bb
-    yolo_draw_bbs_path = yolo_draw_bbs_path
-    yolo_draw_single_bb_cv2 = yolo_draw_single_bb_cv2
+        @param seed: Used to seed everything
+        @param deterministic: Set `torch.backends.cudnn.deterministic`. NOTE can drastically increase run time if True
+
+
+        """
+        type_check.assert_types([seed, deterministic], [int, bool])
+
+        torch.backends.cudnn.deterministic = deterministic
+        random.seed(seed)
+        os.environ['PYTHONHASHSEED'] = str(seed)
+        np.random.seed(seed)
+        torch.manual_seed(seed)
+        torch.cuda.manual_seed(seed)
+
+    @staticmethod
+    def show_tensor_image(image_tensor: torch.Tensor, rows: int = 1, cols: int = 1, fig_size: matplotlib.figure.Figure = (15, 10)):
+        """
+        Function description:
+        Can show multiple tensor images.
+
+        @param image_tensor: (samples, channels, width, height)
+        @param rows: Number of rows in the plot
+        @param cols: Number of columns in the plot
+        @param fig_size: matplotlib.pyplot figure size (width x height)
+        """
+        # Tests
+        type_check.assert_types([image_tensor, rows, cols, fig_size],
+                                [torch.Tensor, int, int, matplotlib.figure.Figure])
+        if (rows < 1) or (cols < 1):
+            raise ValueError("Both `rows` and `cols` must be greater than or equal to 1")
+        if rows * cols > image_tensor.shape[0]:
+            raise ValueError(f"Not enough images for {rows} rows and {cols} cols")
+        if len(image_tensor.shape) != 4:
+            raise ValueError(f"Expected shape (samples, channels, width, height) received {image_tensor.shape}. "
+                             f"If greyscale try `image_tensor.unsqueeze(1)`")
+        if image_tensor.shape[1] > 3:
+            warnings.warn("Cannot handle alpha channels, they will be ignored")
+
+        # Just to be sure
+        image_tensor = image_tensor.detach().cpu()
+
+        # If any_pixel_value > 1 --> assuming image_tensor is in [0,255] format and will normalize to [0,1]
+        if sum(image_tensor > 1.0).sum() > 0:
+            image_tensor = image_tensor / 255
+
+        # Prepare for loop
+        is_grayscale = True if image_tensor.shape[1] == 1 else False
+        _, axs = plt.subplots(rows, cols, figsize=fig_size)
+        # coordinates = [(0, 0), (0, 1), (0, 2), (1, 0) ... ]
+        coordinates = list(itertools.product([i for i in range(rows)], [i for i in range(cols)]))
+
+        for i in range(rows * cols):
+            (row, col) = coordinates[i]
+
+            # Deal with 1D or 2D plot i.e. multiple columns and/or rows
+            if rows * cols == 1:
+                ax = axs
+            else:
+                ax = axs[row, col] if (rows > 1 and cols > 1) else axs[i]
+
+            # Format shenanigans
+            image = image_tensor[i].permute(1, 2, 0).numpy()
+            if np.issubdtype(image.dtype, np.float32):
+                image = np.clip(image, 0, 1)
+
+            # Actual plots
+            if is_grayscale:
+                ax.imshow(image, cmap="gray")
+            else:
+                ax.imshow(image)
+            ax.axis("off")
+        plt.show()
+
+    @staticmethod
+    def get_device():
+        # TODO: Handle multi GPU setup ?
+        return torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
+    @staticmethod
+    def get_parameter_count(model: nn.Module, only_trainable: bool = False, decimals: int = 3):
+        """ Number of total or trainable parameters in a pytorch model i.e. nn.Module child """
+        type_check.assert_types([model, only_trainable, decimals], [nn.Module, bool, int])
+        if decimals < 1:
+            raise ValueError(f"Expected `decimals` >= 1, but received {decimals}")
+
+        if only_trainable:
+            temp = sum(p.numel() for p in model.parameters())
+        else:
+            temp = sum(p.numel() for p in model.parameters() if p.requires_grad)
+        return format(temp, f".{decimals}E")
+
+    @staticmethod
+    def metric_acc(pred_logits: torch.Tensor, targets: torch.Tensor):
+        """
+        Function description:
+        Calculate the accuracy of logits
+
+        @param pred_logits: Prediction logits used to calculate the accuracy. Expected shape: (samples, logits)
+        @param targets: Ground truth targets (ints)
+        """
+        type_check.assert_types([pred_logits, targets], [torch.Tensor, torch.Tensor])
+        if pred_logits.shape[0] != targets.shape[0]:
+            raise ValueError("Dimension mismatch between `pred_logits` and `targets`")
+
+        preds = torch.nn.functional.softmax(pred_logits, dim=1).argmax(dim=1)
+        return (preds == targets).detach().float().mean().item()
+
+    @staticmethod
+    def get_batch(dataloader: torch.utils.data.DataLoader):
+        """ Get the next batch """
+        type_check.assert_type(dataloader, torch.utils.data.DataLoader)
+        return next(iter(dataloader))
+
+    @staticmethod
+    def get_model_save_name(to_add: dict, model_name: str, separator: str = "  .  ", include_time: bool = True):
+
+        """
+        Function description:
+        Adds useful information to model save file such as date, time and metrics.
+
+        Example:
+        >> get_model_save_name( {"valid_loss":valid_mean}, "model.pth", "  |  ")
+        "time 17.25.32 03-05-2021  |  valid_loss 0.72153  |  model_name.pth"
+
+        @param to_add: Dictionary which contain information which will be added to the model save name e.g. loss
+        @param model_name: Actual name of the model. Will be the last thing appended to the save path
+        @param separator: The separator symbol used between information e.g. "thing1 <separator> thing2 <separator> ...
+        @param include_time: If true, include full date and time  e.g. 17.25.32 03-05-2021 <separator> ...
+        """
+        # Checks
+        type_check.assert_types([to_add, model_name, separator, include_time], [dict, str, str, True])
+        if system_info.on_windows() and (separator in system_info.windows_illegal_file_name_character):
+            raise ValueError(f"Received illegal separator symbol `{separator}`. Windows don't allow the "
+                             f"following characters in a filename: {system_info.windows_illegal_file_name_character}")
+
+        return_string = ""
+        if include_time:
+            time_plus_date = datetime.datetime.now().strftime('%H.%M.%S %d-%m-%Y')
+            return_string = f"time {time_plus_date}{separator}" if include_time else ""
+
+        # Adds everything from to_add dict
+        for key, value in to_add.items():
+            if type(value) in [float, np.float16, np.float32, np.float64]:
+                value = f"{value:.5}".replace("+", "")  # Rounding to 5 decimals
+            return_string += str(key) + " " + str(value) + separator
+
+        return_string += model_name
+        if system_info.on_windows():
+            if len(return_string) > 256:
+                raise RuntimeError(f"File name is to long. Windows only allow 256 character, "
+                                   f"but attempted save file with `{len(return_string)} characters`")
+
+        return return_string
+
+    @staticmethod
+    def yolo_bb_from_normal_bb(bb, img_width, img_height, label, xywh=False):
+        # TODO refactor and add checks
+        if not xywh:
+            x1, y1, x2, y2 = bb
+            bb_width, bb_height = (x2 - x1), (y2 - y1)
+        else:
+            x1, y1, bb_width, bb_height = bb
+
+        # Width and height
+        bb_width_norm = bb_width / img_width
+        bb_height_norm = bb_height / img_height
+
+        # Center
+        bb_center_x_norm = (x1 + bb_width / 2) / img_width
+        bb_center_y_norm = (y1 + bb_height / 2) / img_height
+
+        # Yolo format --> |class_name center_x center_y width height|.txt  -  NOT included the two '|'
+        string = str(label)
+        for s in [bb_center_x_norm, bb_center_y_norm, bb_width_norm, bb_height_norm]:
+            string += " " + str(s)
+
+        return string
+
+    @staticmethod
+    def yolo_draw_bbs_path(yolo_image_path, yolo_bb_path, color=(0, 0, 255)):
+        # TODO refactor and add checks
+        assert os.path.exists(yolo_image_path), "Bad path"
+        image = cv2.imread(yolo_image_path)
+        dh, dw, _ = image.shape
+
+        fl = open(yolo_bb_path, "r")
+        data = fl.readlines()
+        fl.close()
+
+        for dt in data:
+            _, x, y, w, h = map(float, dt.split(' '))
+            l = int((x - w / 2) * dw)
+            r = int((x + w / 2) * dw)
+            t = int((y - h / 2) * dh)
+            b = int((y + h / 2) * dh)
+
+            if l < 0: l = 0
+            if r > dw - 1: r = dw - 1
+            if t < 0: t = 0
+            if b > dh - 1: b = dh - 1
+
+            cv2.rectangle(image, (l, t), (r, b), color, 2)
+        return image
+
+    @staticmethod
+    def yolo_draw_single_bb_cv2(image_cv2, x, y, w, h, color=(0, 0, 255)):
+        # TODO refactor and add checks. Also merge this with `yolo_draw_bbs_path` seems wasteful to have both
+        dh, dw, _ = image_cv2.shape
+
+        l = int((x - w / 2) * dw)
+        r = int((x + w / 2) * dw)
+        t = int((y - h / 2) * dh)
+        b = int((y + h / 2) * dh)
+
+        if l < 0: l = 0
+        if r > dw - 1: r = dw - 1
+        if t < 0: t = 0
+        if b > dh - 1: b = dh - 1
+
+        cv2.rectangle(image_cv2, (l, t), (r, b), color, 2)
+        return image_cv2
 pytorch = Pytorch()
 
 ########################################################################################################################
@@ -1981,4 +1970,5 @@ __all__ = [
 
 if __name__ == "__main__":
     pass
+    #print(pytorch.get_device())
     #all_around.ndarray_to_bins(np.array([1, 2, 3, 4]))
