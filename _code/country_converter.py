@@ -1,4 +1,4 @@
-country_to_ISO_3166_alpha2 = {
+_country_to_ISO_3166_alpha2 = {
  'Afghanistan': 'AF',
  'Albania': 'AL',
  'Algeria': 'DZ',
@@ -252,7 +252,7 @@ country_to_ISO_3166_alpha2 = {
  'Åland Islands': 'AX'}
 
 
-ISO_3166_alpha2_to_country = {
+_ISO_3166_alpha2_to_country = {
  'AF': 'Afghanistan',
  'AL': 'Albania',
  'DZ': 'Algeria',
@@ -506,7 +506,7 @@ ISO_3166_alpha2_to_country = {
  'AX': 'Åland Islands'}
 
 
-ISO_3166_alpha3_to_alpha2 = {
+_ISO_3166_alpha3_to_alpha2 = {
  'AFG': 'AF',
  'ALA': 'AX',
  'ALB': 'AL',
@@ -755,7 +755,7 @@ ISO_3166_alpha3_to_alpha2 = {
  'ZWE': 'ZW'}
 
 
-ISO_3166_alpha2_to_alpha3 = {
+_ISO_3166_alpha2_to_alpha3 = {
  'AF': 'AFG',
  'AX': 'ALA',
  'AL': 'ALB',
@@ -1004,7 +1004,7 @@ ISO_3166_alpha2_to_alpha3 = {
  'ZW': 'ZWE'}
 
 
-ISO_3166_alpha3_to_country = {
+_ISO_3166_alpha3_to_country = {
  'AFG': 'Afghanistan',
  'ALA': 'Åland Islands',
  'ALB': 'Albania',
@@ -1252,7 +1252,7 @@ ISO_3166_alpha3_to_country = {
  'ZWE': 'Zimbabwe'}
 
 
-country_to_ISO_3166_alpha3 = {
+_country_to_ISO_3166_alpha3 = {
  'Afghanistan': 'AFG',
  'Åland Islands': 'ALA',
  'Albania': 'ALB',
@@ -1500,16 +1500,15 @@ country_to_ISO_3166_alpha3 = {
  'Zimbabwe': 'ZWE'}
 
 
-class Country:
-    country_to_alpha2 = country_to_ISO_3166_alpha2
-    country_to_alpha3 = country_to_ISO_3166_alpha3
+class _Country:
+    country_to_alpha2 = _country_to_ISO_3166_alpha2
+    country_to_alpha3 = _country_to_ISO_3166_alpha3
 
-    alpha2_to_country = ISO_3166_alpha2_to_country
-    alpha2_to_alpha3 = ISO_3166_alpha2_to_alpha3
+    alpha2_to_country = _ISO_3166_alpha2_to_country
+    alpha2_to_alpha3 = _ISO_3166_alpha2_to_alpha3
     
-    alpha3_to_alpha2 = ISO_3166_alpha3_to_alpha2
-    alpha3_to_country = ISO_3166_alpha3_to_country
+    alpha3_to_alpha2 = _ISO_3166_alpha3_to_alpha2
+    alpha3_to_country = _ISO_3166_alpha3_to_country
 
-country_converter = Country()
-
+country_converter = _Country()
 __all__ = ["country_converter"]
