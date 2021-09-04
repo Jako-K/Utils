@@ -5,13 +5,13 @@ Super basic interface with Kaggle's dataset API.
 
 INTENDED USE:
 1.) set `project_display_name`, `project_folder_name` and `upload_folder_path`
-2.) run this file i.e. upload_dataset_to_kaggle.py in a Python interpreter
+2.) run this file i.e. _upload_dataset_to_kaggle.py in a Python interpreter
 
 # EXAMPLE:
 project_display_name = "Mask Detection Dataset"
 project_folder_name = "mask-detection-dataset"
 upload_folder_path = "C:/Users/JK/Desktop/datasets/mask_dataset_yolo"
-!python upload_dataset_to_kaggle.py
+!python _upload_dataset_to_kaggle.py
 
 """
 
@@ -57,3 +57,7 @@ else:
 # Clean up
 os.remove("./dataset-metadata.json")
 os.remove(f"./{project_folder_name}.zip")
+
+
+# `name_search` expect __all__ to contain everything searchable
+__all__ = []

@@ -8,11 +8,11 @@ But for know they just live here, without any real connection.
 import numpy as _np
 import matplotlib.pyplot as _plt
 import pandas as _pd
-from . import type_check as _type_check
+import type_check as _type_check
 import itertools as _itertools
 import random as _random
 import math as _math
-from . import colors as _colors
+import colors as _colors
 
 
 def pandas_standardize_df(df:_pd.DataFrame):
@@ -99,7 +99,7 @@ def unfair_coin_flip(p: float):
 def int_sign(x: int):
     """ Return -1 if `x` is negative and 1 if `x` is positive """
     _type_check.assert_type(x, int)
-    return _math.copysign(1, x)
+    return int(_math.copysign(1, x))
 
 
 def init_2d_list(rows:int, cols:int, value=None):

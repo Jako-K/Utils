@@ -1,9 +1,11 @@
 import IPython as _IPython
 import matplotlib.pyplot as _plt
 import torchaudio as _torchaudio
+from PIL import Image as _Image
 
-from . import type_check as _type_check
-from . import input_output as _input_output
+import type_check as _type_check
+import input_output as _input_output
+
 
 # Just convenient to have it here as well
 # show_image = Images.show_image
@@ -57,6 +59,34 @@ def play_audio(path:str, plot:bool=True):
         duration = round(len(sound[0]) / sample_rate, 3)
         _plt.plot(sound[0])
         _plt.title(f"type: {audio_bar.mimetype} | duration: {duration} s | sample rate: {sample_rate}")
+
+
+# TODO add unit test
+def show_image(path:str, resize_factor:float = 1.0):
+    """
+    Function description:
+    Display a single image from `path`.
+
+    @param path: Path to an image
+    @param resize_factor: Rescale factor in percentage, `scale_factor` < 0
+    """
+    # TODO Include support for URL image path
+
+    # Checks
+    _type_check.assert_types([path, resize_factor], [str, float])
+    _input_output.assert_path(path)
+    if resize_factor < 0:
+        ValueError(f"`resize_factor` > 0, received value of {resize_factor}")
+
+    assert_in_jupyter()
+    image = _Image.open(path)
+
+    # Resize
+    width = int(image.size[0] * resize_factor)
+    height = int(image.size[1] * resize_factor)
+    image = image.resize((width, height), resample=0, box=None)
+    display(image)
+
 
 
 __all__=[

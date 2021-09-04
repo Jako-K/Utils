@@ -14,8 +14,8 @@ import numpy as _np
 import matplotlib as _matplotlib
 import matplotlib.pyplot as _plt
 
-from . import type_check as _type_check
-from . import system_info as _system_info
+import type_check as _type_check
+import system_info as _system_info
 
 
 class ArcFaceClassifier(_nn.Module):
@@ -357,7 +357,7 @@ def show_tensor_image(image_tensor: _torch.Tensor, rows: int = 1, cols: int = 1,
     @param cols: Number of columns in the plot
     @param fig_size: matplotlib.pyplot figure size (width x height)
     """
-    # Tests
+    # Checks
     _type_check.assert_types([image_tensor, rows, cols, fig_size],
                              [_torch.Tensor, int, int, _matplotlib.figure.Figure])
     if (rows < 1) or (cols < 1):
@@ -412,7 +412,7 @@ def get_device():
 
 
 def get_parameter_count(model: _nn.Module, only_trainable: bool = False, decimals: int = 3):
-    """ Number of total or trainable parameters in a pytorch model i.e. nn.Module child """
+    """ Number of total or trainable parameters in a pytorch model i.e. a nn.Module child """
     _type_check.assert_types([model, only_trainable, decimals], [_nn.Module, bool, int])
     if decimals < 1:
         raise ValueError(f"Expected `decimals` >= 1, but received `{decimals}`")
@@ -427,7 +427,7 @@ def get_parameter_count(model: _nn.Module, only_trainable: bool = False, decimal
 def metric_acc(pred_logits: _torch.Tensor, targets: _torch.Tensor):
     """
     Function description:
-    Calculate the accuracy of logits
+    Calculate accuracy of logits
 
     @param pred_logits: Prediction logits used to calculate the accuracy. Expected shape: (samples, logits)
     @param targets: Ground truth targets (ints)
@@ -446,7 +446,7 @@ def get_batch(dataloader: _torch.utils.data.DataLoader):
     return next(iter(dataloader))
 
 
-def get_model_save_name(to_add: dict, model_name: str, separator: str = "  .  ", include_time: bool = True):
+def get_model_save_name(model_name:str, to_add: dict=None, separator: str = "  .  ", include_time: bool = True):
 
     """
     Function description:
@@ -462,7 +462,8 @@ def get_model_save_name(to_add: dict, model_name: str, separator: str = "  .  ",
     @param include_time: If true, include full date and time  e.g. 17.25.32 03-05-2021 <separator> ...
     """
     # Checks
-    _type_check.assert_types([to_add, model_name, separator, include_time], [dict, str, str, True])
+    if to_add is None: to_add = {} # Avoid mutable default arguments
+    _type_check.assert_types([model_name, to_add, separator, include_time], [str, dict, str, bool])
     if _system_info.on_windows() and (separator in _system_info.windows_illegal_file_name_character):
         raise ValueError(f"Received illegal separator symbol `{separator}`. Windows don't allow the "
                          f"following characters in a filename: {_system_info.windows_illegal_file_name_character}")
@@ -481,8 +482,8 @@ def get_model_save_name(to_add: dict, model_name: str, separator: str = "  .  ",
     return_string += model_name
     if _system_info.on_windows():
         if len(return_string) > 256:
-            raise RuntimeError(f"File name is to long. Windows only allow 256 character, "
-                               f"but attempted save file with `{len(return_string)} characters`")
+            raise RuntimeError(f"File name is to long. Windows allows non more than 256 character, "
+                               f"but attempted to save file with `{len(return_string)}` characters")
 
     return return_string
 

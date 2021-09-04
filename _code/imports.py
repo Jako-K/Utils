@@ -3,13 +3,14 @@ import os as _os
 import types as _types
 import pathlib as _pathlib
 
-from . import type_check as _type_check
-from . import jupyter as _jupyter
+import type_check as _type_check
+import jupyter as _jupyter
 
-def get_imports(all_requests=None):
+def get_imports(all_requests:list=None):
     """
-    Return common imports e.g. matplotlib.pyplot as plt.
-    Expect `request` to be in `legal_imports` and to be a list e.g. ["all"]
+    Return common imports e.g. import matplotlib.pyplot as plt, import pandas as pd etc.
+    Expect `all_requests` to be in `["torch", "torchvision", "all_around", "all"]`
+    and to be a list e.g. ["all"]
     """
     if all_requests is None: all_requests = ["all"] # To avoid mutable default argument
     legal_imports = ["torch", "torchvision", "all_around", "all"]
@@ -66,7 +67,7 @@ def get_imports(all_requests=None):
                 to_concate = [all_around_imp]
 
     for all_imports in to_concate:
-        [print(line[8:]) for line in all_imports.split("\n")] # <-- line[8:] remove 4 start spaces
+        [print(line[4:]) for line in all_imports.split("\n")] # <-- line[4:] remove 4 start spaces
 
 
 def get_available_functions(module:_types.ModuleType):

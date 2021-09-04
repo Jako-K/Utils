@@ -1,14 +1,14 @@
 # TODO: Add unit tests
 
 import numpy as _np
-from . import type_check as _type_check
+import type_check as _type_check
 from PIL import Image as _Image
 import requests as _requests
 import cv2 as _cv2
 
-from . import colors as _colors
-from . import input_output as _input_output
-from . import jupyter as _jupyter
+import colors as _colors
+import input_output as _input_output
+import jupyter as _jupyter
 
 
 def is_ndarray_greyscale(image: _np.ndarray):
@@ -34,15 +34,15 @@ def assert_ndarray_image(image: _np.ndarray):
         ValueError("Detected a negative value in np.ndarray image, this is not allowed.")
 
     if image.dtype != 'uint8':
-        raise TypeError(f"Expected `image` to be of dtype uint8, but received {image.dtype}. "
-                        f"If `image` is in float 0-1 format instead of 0-255 8bit "
+        raise TypeError(f"Expected `image` to be of dtype uint8, but received `{image.dtype}`. "
+                        f"If `image` is in 0.0-1.0 float format, "
                         "try casting it with: `image = (image * 255).astype(np.uint8)`.")
 
     if not is_greyscale:
         num_channels = image.shape[2]
         if num_channels not in [3, 4]:
             ValueError(f"Received an unknown number of color channels: `{num_channels}`. "
-                       f"Accepted number of channels are 2 and 4 (RGB and RGBA respectively) ")
+                       f"Accepted number of channels are 1, 3 and 4 (Greysacle, RGB and RGBA respectively) ")
 
 
 def pillow_resize_image(image: _Image.Image, resize_factor: float = 1.0):
@@ -151,7 +151,7 @@ def show_image( path: str, resize_factor: float = 1.0):
         show_ndarray_image(image)
 
 
-def show_ndarray_image(image: _np.ndarray, resize_factor: float = 1.0, name: str = ""):
+def show_ndarray_image(image: _np.ndarray, resize_factor: float = 1.0, name: str = "", BGR2RGB:bool = False):
     """
     Function description:
     Display a single image from a `np.ndarray` source (works in standard python and jupyter environment)
@@ -159,17 +159,21 @@ def show_ndarray_image(image: _np.ndarray, resize_factor: float = 1.0, name: str
     @param image: Image in np.ndarray format
     @param resize_factor: Rescale factor in percentage, `scale_factor` < 0
     @param name: window name used in `cv2.imshow()` (Has no effect when inside jupyter notebook environment)
+    @param BGR2RGB: Swap the blue and red color channel i.e. BGR --> RGB
     """
 
     # Checks
-    _type_check.assert_types([image, resize_factor, name], [_np.ndarray, float, str])
+    _type_check.assert_types([image, resize_factor, name, BGR2RGB], [_np.ndarray, float, str, bool])
     assert_ndarray_image(image)
     if resize_factor < 0:
         ValueError(f"`resize_factor` > 0, received value of {resize_factor}")
 
+    if BGR2RGB:
+        image = _cv2.cvtColor(image, _cv2.COLOR_BGR2RGB)
+
     # If inside a jupyter environment Pillow is ued to show the image, otherwise cv2.
     if _jupyter.in_jupyter():
-        image = ndarray_image_to_pillow(image)
+        image = ndarray_image_to_pillow(image, BGR2RGB=False)
         image = pillow_resize_image(image, resize_factor)
         display(image)
     else:
@@ -259,7 +263,7 @@ def cv2_sobel_edge_detection(image: _np.ndarray, blur_kernel_size: int = 5,
     if vertical:
         vertical_sobel = _cv2.Sobel(blurred, 0, 0, 1, _cv2.CV_64F)
 
-    # Looks more mysterious then it is. Simple away of dealing with all possible values of `horizontal` and `vertical`
+    # Looks more mysterious then it is. Its simple away of dealing with all possible values of `horizontal` and `vertical`
     edges = _cv2.bitwise_or(horizontal_sobel if horizontal else vertical,
                             vertical_sobel if vertical else horizontal_sobel)
     return edges

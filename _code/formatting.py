@@ -3,11 +3,11 @@ Description:
 Help format stuff e.g. numbers in scientific notation
 """
 
-from . import type_check as _type_check
+import type_check as _type_check
 import ast as _ast
 
 def scientific_notation(number, num_mantissa:int):
-    """ Rewrite number to scientific notation with `num_mantissa` amount of decimals """
+    """ Rewrite `number` to scientific notation with `num_mantissa` amount of decimals """
     # Checks + int --> float cast if necessary
     if isinstance(number, int): number = float(number)
     _type_check.assert_types([number, num_mantissa], [float, int])

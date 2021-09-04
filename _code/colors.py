@@ -16,7 +16,7 @@ from PIL import ImageColor as _ImageColor
 import numpy as _np
 import matplotlib as _matplotlib
 import matplotlib.pyplot as _plt
-from . import type_check as _type_check
+import type_check as _type_check
 
 
 # Seaborn color scheme
@@ -40,8 +40,8 @@ seaborn_colors = {"blue": seaborn_blue,
                   "white": seaborn_white}
 
 legal_types = ["rgb", "hex"]
-scheme_name_to_colors = {"seaborn": seaborn_colors}
-colors_schemes = list(scheme_name_to_colors.keys())
+_scheme_name_to_colors = {"seaborn": seaborn_colors}
+_colors_schemes = list(_scheme_name_to_colors.keys())
 
 
 def is_legal_hex(color: str):
@@ -88,15 +88,15 @@ def assert_color(color):
 def _assert_color_scheme(scheme: str):
     """ assert color scheme is supported """
     _type_check.assert_type(scheme, str)
-    if scheme not in colors_schemes:
-        raise ValueError(f"Received unknown color scheme {scheme}. Legal types: {colors_schemes}")
+    if scheme not in _colors_schemes:
+        raise ValueError(f"Received unknown color scheme {scheme}. Legal types: {_colors_schemes}")
 
 
 def _assert_color_word(color_name:str, scheme_name:str):
     """ Check if `color_name` is in `scheme_name` (scheme is assumed legal) """
     _type_check.assert_types([color_name, scheme_name], [str, str])
     _assert_color_scheme(scheme_name)
-    color_scheme = scheme_name_to_colors[scheme_name]
+    color_scheme = _scheme_name_to_colors[scheme_name]
     if color_name not in color_scheme.keys():
         raise ValueError(f"Color `{color_name}` is not present in color scheme `{scheme_name}`")
 
@@ -118,12 +118,12 @@ def convert_color(color, convert_to:str):
         raise AssertionError("Shouldn't have gotten this far")
 
 
-def random_color(color_type:str="rgb", amount:int=1, min_rgb:int=0, max_rgb:int=255):
+def random_color(amount:int=1, color_type:str="rgb", min_rgb:int=0, max_rgb:int=255):
     """
     return `amount` number of random colors in accordance with `min_rgb` and `max_rgb`
     in the color format specified by `color_type`.
     """
-    _type_check.assert_types([color_type, amount, min_rgb, max_rgb], [str, int, int, int])
+    _type_check.assert_types([amount, color_type, min_rgb, max_rgb], [int, str, int, int])
     _assert_type_str(color_type)
 
     if not (0 <= min_rgb <= 255):
@@ -168,7 +168,7 @@ def color_from_name(color_name:str, color_type:str="rgb", color_scheme:str="seab
     _assert_color_scheme(color_scheme)
     _assert_color_word(color_name, color_scheme)
 
-    color_scheme = scheme_name_to_colors[color_scheme]
+    color_scheme = _scheme_name_to_colors[color_scheme]
     color = color_scheme[color_name]
     color_converted = convert_color(color, color_type)
 
@@ -183,6 +183,9 @@ def display_colors(colors: list):
         raise ValueError(f"Expected at least 1 color, received `{len(colors)}` number of colors")
     for color in colors:
         assert_color(color)
+
+    # The plot expects colors of type RGB
+    colors = [convert_color(color, "rgb") for color in colors]
 
     fig, ax = _plt.subplots(figsize=(15, len(colors)))
     _plt.xlim([0, 100])
@@ -211,7 +214,7 @@ def display_colors(colors: list):
             # White text if light color, black text if dark color + text plot
             brightness = _np.mean(color_rgb)
             text_color = "black" if brightness > 50 else "white"
-            _plt.text(5 + j * 20, y_start + square_height // 2, text, color=text_color, size=15)
+            _plt.text(5 + j * 20, y_start + square_height // 2 - 0.5, text, color=text_color, size=15)
 
     _plt.axis("off")
     _plt.show()
@@ -219,14 +222,14 @@ def display_colors(colors: list):
     return fig, ax
 
 
-def get_colors_from_scheme(color_scheme:str, color_type:str="rgb"):
+def get_color_scheme(color_scheme:str, color_type:str= "rgb"):
     """ Return the color values from `color_scheme` in the format specified by `color_type`"""
     _type_check.assert_types([color_scheme, color_type], [str, str])
     _assert_type_str(color_type)
     _assert_color_scheme(color_scheme)
 
     # Grab all the color values and change their format to match that of `color_type`
-    colors = scheme_name_to_colors[color_scheme].values()
+    colors = _scheme_name_to_colors[color_scheme].values()
     return [convert_color(color, color_type) for color in colors]
 
 
@@ -243,8 +246,8 @@ __all__ = [
     "seaborn_white",
     "seaborn_colors",
     "legal_types",
-    "scheme_name_to_colors",
-    "colors_schemes",
+    "_scheme_name_to_colors",
+    "_colors_schemes",
 
     # Functions
     "is_legal_hex",
@@ -260,5 +263,5 @@ __all__ = [
     "rgb_to_hex",
     "color_from_name",
     "display_colors",
-    "get_colors_from_scheme"
+    "get_color_scheme"
 ]

@@ -1,9 +1,22 @@
-import unittest
+import os
 import pandas as _pd
 import numpy as _np
 import os as _os
 from glob import glob as _glob
 import types as _types
+import unittest
+import utils
+
+# Print total line count
+test_count = utils.input_output.get_line_count_file(
+    "./test_all.py", exclude_empty_lines=True)
+code_count, _ = utils.input_output.get_line_counts_folder(
+    "../_code", only_extension=".py", exclude_empty_lines=True)
+print("\n" * 2 + "-" * 70)
+print("Line counts:")
+print(f"- Tests: {test_count}\n"
+      f"-  Code: {code_count}\n"
+      f"- Total: {test_count + code_count}\n")
 
 ########################################################################################################################
 ##########################################             all_around                #######################################
@@ -15,8 +28,6 @@ class Test_all_around(unittest.TestCase):
 
     def test_assert_path(self):
         with self.assertRaises(TypeError): pandas_standardize_df("not a dataframe")
-        norm_df = pandas_standardize_df(_pd.DataFrame(_np.array([1, 2, 3, 4])))
-
         norm_df = pandas_standardize_df(_pd.DataFrame(_np.array([1, 2, 3, 4])))
         self.assertEqual(str(norm_df), """          0\n0 -1.161895\n1 -0.387298\n2  0.387298\n3  1.161895""")
 
@@ -115,7 +126,7 @@ class Test_colors(unittest.TestCase):
     def test_assert_color_scheme(self):
         with self.assertRaises(ValueError): _assert_color_scheme("not_seaborn")
         with self.assertRaises(TypeError): _assert_color_scheme(123)
-        for scheme in scheme_name_to_colors.keys():
+        for scheme in _scheme_name_to_colors.keys():
             _assert_color_scheme(scheme)
 
 
@@ -124,7 +135,7 @@ class Test_colors(unittest.TestCase):
         with self.assertRaises(TypeError): _assert_color_word( "blue", None)
         with self.assertRaises(ValueError): _assert_color_word("not_a_color", "not_seaborn")
 
-        for scheme, scheme_colors in scheme_name_to_colors.items():
+        for scheme, scheme_colors in _scheme_name_to_colors.items():
             for color in scheme_colors:
                 _assert_color_word(color, scheme)
 
@@ -147,18 +158,18 @@ class Test_colors(unittest.TestCase):
 
     def test_random_color(self):
         with self.assertRaises(TypeError): random_color(None)
-        with self.assertRaises(TypeError): random_color("rgb", amount=1.0)
-        with self.assertRaises(TypeError): random_color("rgb", min_rgb=1.0)
-        with self.assertRaises(TypeError): random_color("rgb", max_rgb=1.0)
-        with self.assertRaises(ValueError): random_color("not_at_color_type_str")
+        with self.assertRaises(TypeError): random_color(amount=1.0, color_type="rgb")
+        with self.assertRaises(TypeError): random_color(color_type="rgb", min_rgb=1.0)
+        with self.assertRaises(TypeError): random_color(color_type="rgb", max_rgb=1.0)
+        with self.assertRaises(ValueError): random_color(color_type="not_at_color_type_str")
         with self.assertRaises(ValueError): random_color(min_rgb=600)
         with self.assertRaises(ValueError): random_color(max_rgb=0)
         with self.assertRaises(ValueError): random_color(min_rgb=100, max_rgb=50)
         with self.assertRaises(ValueError): random_color(amount=0)
 
-        self.assertEqual( len(random_color("rgb", amount=3)), 3)
-        self.assertEqual( len(random_color("hex", amount=3)), 3)
-        self.assertEqual( len(random_color("hex", 3, 120, 140)), 3)
+        self.assertEqual( len(random_color(amount=3, color_type="rgb")), 3)
+        self.assertEqual( len(random_color(amount=3, color_type="hex")), 3)
+        self.assertEqual( len(random_color(3, "hex", 120, 140)), 3)
 
 
     def test_hex_to_rgb(self):
@@ -180,7 +191,7 @@ class Test_colors(unittest.TestCase):
         with self.assertRaises(ValueError): color_from_name("blue", "not_a_valid_type", "seaborn")
         with self.assertRaises(ValueError): color_from_name("blue", "rgb", "not_seaborn")
 
-        for scheme, scheme_colors in scheme_name_to_colors.items():
+        for scheme, scheme_colors in _scheme_name_to_colors.items():
             for color in scheme_colors:
                 for color_type in legal_types:
                     color_from_name(color, color_type, scheme)
@@ -192,15 +203,16 @@ class Test_colors(unittest.TestCase):
         with self.assertRaises(TypeError): display_colors(["#fffff_"])
         with self.assertRaises(TypeError): display_colors([(1,2,3,4)])
 
-        display_colors( list(scheme_name_to_colors["seaborn"].values()) )
+        display_colors(list(_scheme_name_to_colors["seaborn"].values()))
 
-    def test_get_colors_from_scheme(self):
 
-        with self.assertRaises(TypeError): get_colors_from_scheme("seaborn", None)
-        with self.assertRaises(ValueError): get_colors_from_scheme("seaborn", "no_valid_type")
+    def test_get_color_scheme(self):
 
-        self.assertEqual( get_colors_from_scheme("seaborn"), list(scheme_name_to_colors["seaborn"].values()))
-        self.assertEqual( get_colors_from_scheme("seaborn", "hex"), [
+        with self.assertRaises(TypeError): get_color_scheme("seaborn", None)
+        with self.assertRaises(ValueError): get_color_scheme("seaborn", "no_valid_type")
+
+        self.assertEqual(get_color_scheme("seaborn"), list(_scheme_name_to_colors["seaborn"].values()))
+        self.assertEqual(get_color_scheme("seaborn", "hex"), [
             '#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#e1ffff'
         ])
 
@@ -238,7 +250,7 @@ class Test_formatting(unittest.TestCase):
 ########################################################################################################################
 
 
-#TODO add tests, all missing
+#TODO add tests, all missing (remember to add test_image.png)
 from utils._code.images import *
 class Test_images(unittest.TestCase):
     pass
@@ -276,7 +288,7 @@ class Test_imports(unittest.TestCase):
 ##########################################             Input_output                #####################################
 ########################################################################################################################
 
-
+# TODO add get_file_extension
 from utils._code.input_output import *
 class Test_input_output(unittest.TestCase):
 
@@ -326,8 +338,10 @@ class Test_input_output(unittest.TestCase):
     def test_get_file_basename(self):
         with self.assertRaises(TypeError): get_file_basename(123)
         with self.assertRaises(TypeError): get_file_basename("path", None)
+        with self.assertRaises(ValueError): get_file_basename('C:/Users/JohnDoe/Desktop/test', assert_path_exists=True)
 
         self.assertEqual( get_file_basename('C:/Users/JohnDoe/Desktop/test.png', assert_path_exists=False), "test")
+        self.assertEqual( get_file_basename('C:/Users/JohnDoe/Desktop/test', assert_path_exists=False), "test")
         self.assertEqual( get_file_basename('C:/Users/JohnDoe/Desktop/test.png', True, False), "test.png")
         self.assertEqual( get_file_basename('C:/Users/JohnDoe/Desktop/test.png.jpg', True, False), "test.png.jpg")
 
@@ -354,6 +368,7 @@ class Test_input_output(unittest.TestCase):
         with open("./test.json", "r") as F:
             self.assertEqual(F.read(), '{"hello_world": []}')
         _os.remove("./test.json")
+
 
     def test_get_number_of_files(self):
         with self.assertRaises(TypeError): get_number_of_files(123)
@@ -406,12 +421,69 @@ class Test_input_output(unittest.TestCase):
         _os.rmdir("./testdir1")
 
 
+    def test_is_folder(self):
+        self.assertEqual(is_folder("./hello123", must_be_empty=True), False)
+        os.mkdir("hello123")
+        self.assertEqual(is_folder("./bad_folder_path"), False)
+        self.assertEqual(is_folder("./test_all.py"), False)
+        self.assertEqual(is_folder("./", must_be_empty=True), False)
+        self.assertEqual(is_folder("./hello123", must_be_empty=True), True)
+        self.assertEqual(is_folder("./hello123", must_be_empty=False), True)
+        os.rmdir("./hello123")
+
+
+    def test_make_file(self):
+        make_file("./test_text0.txt", allow_override=True)
+        assert_path("./test_text0.txt")
+        make_file("./test_text0.txt", allow_override=True)
+        with self.assertRaises(ValueError): make_file("./test_text0.txt", allow_override=False)
+        os.remove("./test_text0.txt")
+
+
+    def test_is_file(self):
+        self.assertEqual(is_file("./test_text1.txt"), False)
+        make_file("./test_text1.txt")
+        self.assertEqual(is_file("./test_text1.txt"), True)
+        with self.assertRaises(ValueError): is_file("./test_text1.txt", "txt")
+        self.assertEqual(is_file("./test_text1.txt", ".txt"), True)
+        self.assertEqual(is_file("./"), False)
+        os.remove("./test_text1.txt")
+
+
+    def test_remove_file(self):
+        with self.assertRaises(ValueError): remove_file("./test_text2.txt")
+        make_file("./test_text2.txt")
+        remove_file("./test_text2.txt")
+        assert_path_dont_exists("./test_text2.txt")
+        with self.assertRaises(ValueError): remove_file("./")
+
+
+    def test_file_count(self):
+        os.mkdir("./file_count_test")
+        make_file(f"./file_count_test/test.py")
+        make_file(f"./file_count_test/test.txt")
+        write_to_file(f"./file_count_test/test.py", "a\n" * 10 + " ")
+        write_to_file(f"./file_count_test/test.txt", "a\n" * 10)
+
+        with self.assertRaises(ValueError): get_line_count_file("./file_count_test")
+        with self.assertRaises(ValueError): get_line_counts_folder(f"./file_count_test/test.py")
+
+        self.assertEqual(get_line_count_file(f"./file_count_test/test.py"), 10)
+        self.assertEqual( get_line_counts_folder(f"./file_count_test", exclude_empty_lines=False),
+                          (21, {'test.py': 11, 'test.txt': 10}))
+        self.assertEqual( get_line_counts_folder(f"./file_count_test", only_extension=".txt"),
+                          (10, {'test.txt': 10}))
+
+        remove_file(f"./file_count_test/test.py")
+        remove_file(f"./file_count_test/test.txt")
+        os.rmdir("./file_count_test")
+
 ########################################################################################################################
 ##########################################             jupyter                ##########################################
 ########################################################################################################################
 
 
-from utils._code.jupyter import *
+from utils._code.jupyter_ipython import *
 class Test_jupyter(unittest.TestCase):
     def test_all(self):
         # I don't really know how to test these properly, since I cannot guarantee to be in a jupyter env.
@@ -487,9 +559,63 @@ class Test_system_info(unittest.TestCase):
 
 
 ########################################################################################################################
-######################################             type_check                ###########################################
+####################################             time_and_date                ##########################################
 ########################################################################################################################
 
+
+from utils._code.time_and_date import *
+class UnitTests(unittest.TestCase):
+
+    def test_stop_watch(self):
+        # Init checks
+        with self.assertRaises(TypeError):
+            StopWatch(time_unit = "seconds", start_on_create= None, precision_decimals = 3)
+        with self.assertRaises(TypeError):
+            StopWatch(time_unit = "seconds", start_on_create= False, precision_decimals = 3.0)
+        with self.assertRaises(TypeError):
+            StopWatch(time_unit = None, start_on_create= False, precision_decimals = 3)
+        with self.assertRaises(ValueError):
+            StopWatch(time_unit = "seconds", start_on_create= False, precision_decimals = -1)
+
+        for value in StopWatch().legal_units:
+            StopWatch(time_unit=value)
+
+        # Check all functions
+        timer = StopWatch(precision_decimals=0)
+        with self.assertRaises(RuntimeError): timer.stop()
+        timer.start()
+        timer.get_elapsed_time()
+        timer.stop()
+        timer.reset()
+        timer.set_unit("minutes")
+
+
+    def test_fps_timer(self):
+        # Init checks
+        with self.assertRaises(TypeError):
+            FPSTimer(precision_decimals=None)
+        with self.assertRaises(ValueError):
+            FPSTimer(precision_decimals=-1)
+
+        # Check all functions
+        fps_timer = FPSTimer(precision_decimals=0)
+        with self.assertRaises(RuntimeError): fps_timer.get_fps()
+        with self.assertRaises(RuntimeError): fps_timer.increment()
+        fps_timer.start()
+        fps_timer.increment()
+        self.assertEqual(fps_timer.get_frame_count(), 1)
+        fps_timer.get_fps()
+        fps_timer.increment()
+        fps_timer.reset()
+
+
+    def test_months(self):
+        self.assertEqual(len(month_names) == len(month_names_abb) == 12, True)
+
+
+########################################################################################################################
+######################################             type_check                ###########################################
+########################################################################################################################
 
 from utils._code.type_check import *
 class Unit_type_check(unittest.TestCase):
@@ -574,6 +700,6 @@ class Unit_type_check(unittest.TestCase):
         assert_comparison_number(0, 0, "=", "number_of_cats")
 
 
-
 if __name__ == "__main__":
-    unittest.main(verbosity=2)
+    unittest.main(verbosity=1)
+

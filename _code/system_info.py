@@ -42,7 +42,7 @@ def get_gpu_info():
     return {"name": _torch.cuda.get_device_properties(0).name,
             "major": _torch.cuda.get_device_properties(0).major,
             "minor": _torch.cuda.get_device_properties(0).minor,
-            "total_memory": _torch.cuda.get_device_properties(0).total_memory / 10 ** 6,
+            "total_memory [MB]": int(_torch.cuda.get_device_properties(0).total_memory / 10 ** 6),
             "multi_processor_count": _torch.cuda.get_device_properties(0).multi_processor_count
             }
 
@@ -78,7 +78,7 @@ def get_computer_info():
     print(f"Version: {uname.version}")
     print(f"Machine: {uname.machine}")
     print(f"Processor: {uname.processor}")
-    print(f"GPU: {get_gpu_info()['name']} - {round(get_gpu_info()['total_memory'])} VRAM")
+    print(f"GPU: {get_gpu_info()['name']} - {round(get_gpu_info()['total_memory [MB]'])} MB VRAM")
     print("=" * 100)
 
 
