@@ -1,4 +1,4 @@
-from . import type_check as _type_check
+import type_check as _type_check
 from os.path import basename as _basename
 from glob import glob as _glob
 import os as _os
