@@ -21,15 +21,14 @@ from os.path import basename as _basename
 from glob import glob as _glob
 import sys as _sys
 import os as _os
-folder_path = _os.path.abspath(__file__)[:-12]
-_sys.path.append(_os.path.join(folder_path, "_code"))
+_folder_path = _os.path.abspath(__file__)[:-12]
+_sys.path.append(_os.path.join(_folder_path, "_code"))
 
 # Find and import all the `.py` files within `_code` which is not prefixed by an underscore
-modules_names = [_basename(file)[:-3] for file in
-                 _glob(_os.path.join(folder_path, '_code/*.py')) if _basename(file)[0] != "_"]
+_modules_names = [_basename(file)[:-3] for file in
+                 _glob(_os.path.join(_folder_path, '_code/*.py')) if _basename(file)[0] != "_"]
 
-print(_os.path.join(folder_path, '_code/*.py'))
-for module_name in modules_names:
+for module_name in _modules_names:
     exec(f'{module_name} = __import__("{module_name}")')
 
 # Import certain things from those modules which should only be partially visible
