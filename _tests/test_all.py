@@ -12,7 +12,7 @@ from glob import glob as _glob
 import types as _types
 import unittest
 
-from utils._code import input_output
+from dutils._code import input_output
 
 # Print total line count
 test_count = input_output.get_line_count_file(
@@ -31,7 +31,7 @@ print(f"- Tests: {test_count}\n"
 ########################################################################################################################
 
 
-from utils._code.all_around import *
+from dutils._code.all_around import *
 class Test_all_around(unittest.TestCase):
 
     def test_assert_path(self):
@@ -89,7 +89,7 @@ class Test_all_around(unittest.TestCase):
 ########################################################################################################################
 
 
-from utils._code.colors import *
+from dutils._code.colors import *
 class Test_colors(unittest.TestCase):
 
     def test_is_legal_hex(self):
@@ -231,7 +231,7 @@ class Test_colors(unittest.TestCase):
 ########################################################################################################################
 
 
-from utils._code.formatting import *
+from dutils._code.formatting import *
 class Test_formatting(unittest.TestCase):
 
     def test_scientific_notation(self):
@@ -260,7 +260,7 @@ class Test_formatting(unittest.TestCase):
 
 
 #TODO add tests, all missing (remember to add test_image.png)
-from utils._code.images import *
+from dutils._code.images import *
 class Test_images(unittest.TestCase):
 
     def test_load_images(self):
@@ -286,8 +286,8 @@ class Test_images(unittest.TestCase):
 ########################################################################################################################
 
 
-from utils._code.imports import *
-from utils._code import imports
+from dutils._code.imports import *
+from dutils._code import imports
 class Test_imports(unittest.TestCase):
     def test_get_imports(self):
         with self.assertRaises(TypeError): get_imports("not a list")
@@ -314,7 +314,7 @@ class Test_imports(unittest.TestCase):
 ########################################################################################################################
 
 # TODO add get_file_extension
-from utils._code.input_output import *
+from dutils._code.input_output import *
 class Test_input_output(unittest.TestCase):
 
     def test_assert_path(self):
@@ -507,7 +507,7 @@ class Test_input_output(unittest.TestCase):
 ########################################################################################################################
 
 
-from utils._code.jupyter_ipython import *
+from dutils._code.jupyter_ipython import *
 class Test_jupyter(unittest.TestCase):
     def test_all(self):
         # I don't really know how to test these properly, since I cannot guarantee to be in a jupyter env.
@@ -528,7 +528,7 @@ class Test_jupyter(unittest.TestCase):
 
 
 # TODO add tests, all missing
-from utils._code.pytorch import *
+from dutils._code.pytorch import *
 class Test_pytorch(unittest.TestCase):
     pass
 
@@ -538,7 +538,7 @@ class Test_pytorch(unittest.TestCase):
 ########################################################################################################################
 
 
-from utils._code.system_info import *
+from dutils._code.system_info import *
 class Test_system_info(unittest.TestCase):
 
     def test_get_vram_info(self):
@@ -587,7 +587,7 @@ class Test_system_info(unittest.TestCase):
 ########################################################################################################################
 
 
-from utils._code.time_and_date import *
+from dutils._code.time_and_date import *
 class UnitTests(unittest.TestCase):
 
     def test_stop_watch(self):
@@ -641,7 +641,7 @@ class UnitTests(unittest.TestCase):
 ######################################             type_check                ###########################################
 ########################################################################################################################
 
-from utils._code.type_check import *
+from dutils._code.type_check import *
 class Unit_type_check(unittest.TestCase):
 
     def test_assert_type(self):

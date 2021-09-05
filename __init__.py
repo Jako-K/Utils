@@ -1,35 +1,40 @@
 """
 DESCRIPTION:
 A bunch modules with helper functions.
-`utils.search("what_you_want_to_search_for")` can help you find what you're looking for
+`dutils.search("what_you_want_to_search_for")` can help you find what you're looking for
 
 EXAMPLE:
->> `utils.search("image")`
+>> `dutils.search("image")`
 ['images.get_image_from_url', 'images.show_image', ...]
 """
 
 # NOTES:
 #_______________________________________________________________________________________________________________________
 # *  The whole "underscore in front of modules" shenanigans I've used in most of the modules is only there to prevent
-#    namespace pollution e.g. `utils.images.np` is avoided this way and `np` will therefore not be visible to the user
+#    namespace pollution e.g. `dutils.images.np` is avoided this way and `np` will therefore not be visible to the user
 #_______________________________________________________________________________________________________________________
 
-# I want to avoid `from utils import utils` shenanigans, so everything should be accessible like `utils.<module_name>`
+# I want to avoid `from dutils import dutils` shenanigans, so everything should be accessible like `dutils.<module_name>`
 # To make that happened, I need a way of loading all modules within `./_code`. This was the only solution I could
 # find that didn't require a total folder restructuring (Its probably not ideal, but it gets the job done).
 from os.path import basename as _basename
 from glob import glob as _glob
 import sys as _sys
-_sys.path.append("./_code")
+import os as _os
+folder_path = _os.path.abspath(__file__)[:-12]
+_sys.path.append(_os.path.join(folder_path, "_code"))
 
 # Find and import all the `.py` files within `_code` which is not prefixed by an underscore
-modules_names = [_basename(file)[:-3] for file in _glob("./_code/*.py") if _basename(file)[0] != "_"]
+modules_names = [_basename(file)[:-3] for file in
+                 _glob(_os.path.join(folder_path, '_code/*.py')) if _basename(file)[0] != "_"]
+
+print(_os.path.join(folder_path, '_code/*.py'))
 for module_name in modules_names:
     exec(f'{module_name} = __import__("{module_name}")')
 
 # Import certain things from those modules which should only be partially visible
-from utils._code.country_converter import country_converter
-from utils._code._search import search
+from dutils._code.country_converter import country_converter
+from dutils._code._search import search
 
 
 #________________________________________________________________________________________________________________
