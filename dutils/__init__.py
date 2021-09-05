@@ -32,8 +32,8 @@ for module_name in _modules_names:
     exec(f'{module_name} = __import__("{module_name}")')
 
 # Import certain things from those modules which should only be partially visible
-from country_converter import country_converter
-from _search import search
+from ._code.country_converter import country_converter
+from ._code._search import search
 
 
 #________________________________________________________________________________________________________________
