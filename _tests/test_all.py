@@ -1,3 +1,9 @@
+import sys as _sys
+_sys.path.append("../_code")
+
+# Tests things which are kinda annoying: plots (manually close), prints etc.
+VERBOSE = False
+
 import os
 import pandas as _pd
 import numpy as _np
@@ -5,12 +11,14 @@ import os as _os
 from glob import glob as _glob
 import types as _types
 import unittest
-import utils
+
+from utils._code import input_output
 
 # Print total line count
-test_count = utils.input_output.get_line_count_file(
+test_count = input_output.get_line_count_file(
     "./test_all.py", exclude_empty_lines=True)
-code_count, _ = utils.input_output.get_line_counts_folder(
+
+code_count, _ = input_output.get_line_counts_folder(
     "../_code", only_extension=".py", exclude_empty_lines=True)
 print("\n" * 2 + "-" * 70)
 print("Line counts:")
@@ -203,7 +211,8 @@ class Test_colors(unittest.TestCase):
         with self.assertRaises(TypeError): display_colors(["#fffff_"])
         with self.assertRaises(TypeError): display_colors([(1,2,3,4)])
 
-        display_colors(list(_scheme_name_to_colors["seaborn"].values()))
+        if VERBOSE:
+            display_colors(list(_scheme_name_to_colors["seaborn"].values()))
 
 
     def test_get_color_scheme(self):
@@ -253,7 +262,23 @@ class Test_formatting(unittest.TestCase):
 #TODO add tests, all missing (remember to add test_image.png)
 from utils._code.images import *
 class Test_images(unittest.TestCase):
-    pass
+
+    def test_load_images(self):
+        # Grey
+        self.assertEqual(len(load_image("./test_grey.png").shape), 2)
+        if VERBOSE:
+            self.assertEqual(load_image("./test_grey.png", "rgb").shape[2], 3)
+        self.assertEqual(len(load_image("./test_grey.png", "unchanged_bgr").shape), 2)
+
+        # RGB
+        self.assertEqual(load_image("./test_image.png", "rgb").shape[2], 3)
+        self.assertEqual(len(load_image("./test_image.png", "grey").shape), 2)
+        self.assertEqual(load_image("./test_image.png", "unchanged_bgr").shape[2], 3)
+
+        # Alpha
+        self.assertEqual(load_image("./test_alpha.png", "rgb").shape[2], 3)
+        self.assertEqual(len(load_image("./test_alpha.png", "grey").shape), 2)
+        self.assertEqual(load_image("./test_alpha.png", "unchanged_bgr").shape[2], 4)
 
 
 ########################################################################################################################
@@ -386,13 +411,12 @@ class Test_input_output(unittest.TestCase):
 
 
     def test_read_txt_file(self):
-        with self.assertRaises(TypeError): read_txt_file(123)
-        with self.assertRaises(ValueError): read_txt_file("string.wrong_extension")
+        with self.assertRaises(TypeError): read_file(123)
 
         # Open file, write to it, check it's correct and delete it.
         with open("./test.txt", "w") as f: f.close()
         write_to_file("./test.txt", "hello_world 123")
-        self.assertEqual(read_txt_file("./test.txt"), "hello_world 123")
+        self.assertEqual(read_file("./test.txt"), "hello_world 123")
         _os.remove("./test.txt")
 
 

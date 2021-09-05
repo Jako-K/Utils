@@ -144,17 +144,16 @@ def get_number_of_files(path:str):
     return len(_glob(_os.path.join(path, "*")))
 
 
-def read_txt_file(path:str):
-    """ Read .txt file and return it as string"""
+def read_file(path:str):
+    """ Read file at `path` and return it as string"""
     assert_path(path)
-    if path[-4:] != ".txt":
-        raise ValueError("Expected .txt file extension, but received something else")
 
     f = open(path, "r")
-    fileContent = f.read()
+    return_string = f.read()
     f.close()
 
-    return fileContent
+    return return_string
+
 
 
 def save_as_pickle(obj:object, file_name:str, save_path:str=None):
@@ -336,7 +335,7 @@ __all__ = [
     "write_to_file",
     "read_json",
     "get_number_of_files",
-    "read_txt_file",
+    "read_file",
     "save_as_pickle",
     "load_pickle_file",
     "copy_folder",

@@ -5,10 +5,11 @@ import type_check as _type_check
 from PIL import Image as _Image
 import requests as _requests
 import cv2 as _cv2
+import warnings as _warnings
 
 import colors as _colors
 import input_output as _input_output
-import jupyter as _jupyter
+import jupyter_ipython as _jupyter
 
 
 def is_ndarray_greyscale(image: _np.ndarray):
@@ -320,6 +321,45 @@ def cv2_draw_bounding_boxes(image: _np.ndarray, p1: tuple, p2: tuple, label: str
         _cv2.putText(image, text, (p1[0], p1[1] - 2), _cv2.FONT_HERSHEY_DUPLEX, 0.5, color, 1, _cv2.LINE_AA)
 
 
+def load_image(path: str, load_type: str = "unchanged_bgr"):
+    """
+    Load an image in np.ndarray format. Support grayscale, RGB, BGR, RGBA and BGRA
+
+    @param path: Image path
+    @param load_type: Image format that will be return, legal values:
+                      ['grey', 'gray', 'rgb', 'bgr', 'unchanged_bgr', 'unchanged_rgb']
+    @param return: Image at `path` in the format specified by `load_type`
+
+    """
+
+    # Simple Checks
+    _type_check.assert_type(path, str)
+    _input_output.assert_path(path)
+
+    # Check load_type
+    legal_load_types = {"grey": _cv2.IMREAD_GRAYSCALE,
+                        "gray": _cv2.IMREAD_GRAYSCALE,
+                        "rgb": _cv2.IMREAD_COLOR,
+                        "bgr": _cv2.IMREAD_COLOR,
+                        "unchanged_bgr": _cv2.IMREAD_UNCHANGED,
+                        "unchanged_rgb": _cv2.IMREAD_UNCHANGED}
+
+    if load_type.lower() not in legal_load_types:
+        raise ValueError(f"Expected `load_type` to be in `{list(legal_load_types.keys())}`,"
+                         f"but recived `{load_type}`")
+
+    if load_type in ["rgb", "bgr"]:
+        if len(_cv2.imread(path, _cv2.IMREAD_UNCHANGED).shape) == 2:
+            _warnings.warn(f"`{path}` contains a greyscale image, but recived `load_type = {load_type}`"
+                          f"Will return a greyscale image in RGB format i.e. R = G = B")
+
+    # Load image
+    image = _cv2.imread(path, legal_load_types[load_type])
+    if load_type in ["rgb", "unchanged_rgb"]:
+        image = _cv2.cvtColor(image, _cv2.COLOR_BGR2RGB)
+
+    return image
+
 __all__ = [
     "is_ndarray_greyscale",
     "assert_ndarray_image",
@@ -334,5 +374,6 @@ __all__ = [
     "ndarray_image_center",
     "cv2_cutout_square",
     "cv2_sobel_edge_detection",
-    "cv2_draw_bounding_boxes"
+    "cv2_draw_bounding_boxes",
+    "load_image",
 ]
