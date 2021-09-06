@@ -3,16 +3,16 @@ Description
 Stuff that hasen't been tested
 """
 
-import type_check as _type_check
-import input_output as _input_output
-import images as _images
-import colors as _colors
 
 import pydicom as _dicom
 import matplotlib.pylab as _plt
 import numpy as _np
 import cv2 as _cv2
 
+from . import images as _images
+from . import colors as _colors
+from . import type_check as _type_check
+from . import input_output as _input_output
 
 def show_dicom(path:str):
     # Checks

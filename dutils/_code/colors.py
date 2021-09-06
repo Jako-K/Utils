@@ -16,8 +16,8 @@ from PIL import ImageColor as _ImageColor
 import numpy as _np
 import matplotlib as _matplotlib
 import matplotlib.pyplot as _plt
-import type_check as _type_check
 
+from . import type_check as _type_check
 
 # Seaborn color scheme
 seaborn_blue = (31, 119, 180)

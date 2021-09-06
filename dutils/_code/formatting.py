@@ -3,8 +3,8 @@ Description:
 Help format stuff e.g. numbers in scientific notation
 """
 
-import type_check as _type_check
 import ast as _ast
+from . import type_check as _type_check
 
 def scientific_notation(number, num_mantissa:int):
     """ Rewrite `number` to scientific notation with `num_mantissa` amount of decimals """

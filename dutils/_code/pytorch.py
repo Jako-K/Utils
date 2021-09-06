@@ -14,8 +14,8 @@ import numpy as _np
 import matplotlib as _matplotlib
 import matplotlib.pyplot as _plt
 
-import type_check as _type_check
-import system_info as _system_info
+from . import type_check as _type_check
+from . import system_info as _system_info
 
 
 class ArcFaceClassifier(_nn.Module):

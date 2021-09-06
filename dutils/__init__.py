@@ -14,22 +14,20 @@ EXAMPLE:
 #    namespace pollution e.g. `dutils.images.np` is avoided this way and `np` will therefore not be visible to the user
 #_______________________________________________________________________________________________________________________
 
-# I want to avoid `from dutils import dutils` shenanigans, so everything should be accessible like `dutils.<module_name>`
-# To make that happened, I need a way of loading all modules within `./_code`. This was the only solution I could
-# find that didn't require a total folder restructuring (Its probably not ideal, but it gets the job done).
-from os.path import basename as _basename
-from glob import glob as _glob
-import sys as _sys
-import os as _os
-_folder_path = _os.path.abspath(__file__)[:-12]
-_sys.path.append(_os.path.join(_folder_path, "_code"))
-
-# Find and import all the `.py` files within `_code` which is not prefixed by an underscore
-_modules_names = [_basename(file)[:-3] for file in
-                 _glob(_os.path.join(_folder_path, '_code/*.py')) if _basename(file)[0] != "_"]
-
-for module_name in _modules_names:
-    exec(f'{module_name} = __import__("{module_name}")')
+from ._code import (
+    all_around,
+    colors,
+    experimental,
+    formatting,
+    images,
+    imports,
+    input_output,
+    jupyter_ipython,
+    pytorch,
+    system_info,
+    time_and_date,
+    type_check
+)
 
 # Import certain things from those modules which should only be partially visible
 from ._code.country_converter import country_converter

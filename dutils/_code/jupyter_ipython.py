@@ -3,8 +3,8 @@ import matplotlib.pyplot as _plt
 import torchaudio as _torchaudio
 from PIL import Image as _Image
 
-import type_check as _type_check
-import input_output as _input_output
+from . import type_check as _type_check
+from . import input_output as _input_output
 
 
 # Just convenient to have it here as well

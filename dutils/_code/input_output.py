@@ -14,7 +14,8 @@ import json as _json
 from glob import glob as _glob
 import pickle as _pickle
 import shutil as _shutil
-import type_check as _type_check
+
+from . import type_check as _type_check
 
 
 def assert_path(path:str):

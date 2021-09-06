@@ -1,15 +1,15 @@
 # TODO: Add unit tests
 
 import numpy as _np
-import type_check as _type_check
 from PIL import Image as _Image
 import requests as _requests
 import cv2 as _cv2
 import warnings as _warnings
 
-import colors as _colors
-import input_output as _input_output
-import jupyter_ipython as _jupyter
+from . import type_check as _type_check
+from . import colors as _colors
+from . import input_output as _input_output
+from . import jupyter_ipython as _jupyter
 
 
 def is_ndarray_greyscale(image: _np.ndarray):

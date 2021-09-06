@@ -3,8 +3,8 @@ import os as _os
 import types as _types
 import pathlib as _pathlib
 
-import type_check as _type_check
-import jupyter as _jupyter
+from . import type_check as _type_check
+from . import jupyter_ipython as _jupyter
 
 def get_imports(all_requests:list=None):
     """

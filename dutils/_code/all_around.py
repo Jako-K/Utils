@@ -8,12 +8,12 @@ But for know they just live here, without any real connection.
 import numpy as _np
 import matplotlib.pyplot as _plt
 import pandas as _pd
-import type_check as _type_check
 import itertools as _itertools
 import random as _random
 import math as _math
-import colors as _colors
 
+from . import colors as _colors
+from . import type_check as _type_check
 
 def pandas_standardize_df(df:_pd.DataFrame):
     """
