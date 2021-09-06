@@ -1500,15 +1500,20 @@ _country_to_ISO_3166_alpha3 = {
  'Zimbabwe': 'ZWE'}
 
 
-class _Country:
-    country_to_alpha2 = _country_to_ISO_3166_alpha2
-    country_to_alpha3 = _country_to_ISO_3166_alpha3
+country_to_alpha2 = _country_to_ISO_3166_alpha2
+country_to_alpha3 = _country_to_ISO_3166_alpha3
 
-    alpha2_to_country = _ISO_3166_alpha2_to_country
-    alpha2_to_alpha3 = _ISO_3166_alpha2_to_alpha3
-    
-    alpha3_to_alpha2 = _ISO_3166_alpha3_to_alpha2
-    alpha3_to_country = _ISO_3166_alpha3_to_country
+alpha2_to_country = _ISO_3166_alpha2_to_country
+alpha2_to_alpha3 = _ISO_3166_alpha2_to_alpha3
 
-country_converter = _Country()
-__all__ = ["country_converter"]
+alpha3_to_alpha2 = _ISO_3166_alpha3_to_alpha2
+alpha3_to_country = _ISO_3166_alpha3_to_country
+
+__all__ = [
+    "country_to_alpha2",
+    "country_to_alpha3",
+    "alpha2_to_country",
+    "alpha2_to_alpha3",
+    "alpha3_to_alpha2",
+    "alpha3_to_country",
+]

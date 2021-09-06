@@ -14,25 +14,33 @@ EXAMPLE:
 #    namespace pollution e.g. `dutils.images.np` is avoided this way and `np` will therefore not be visible to the user
 #_______________________________________________________________________________________________________________________
 
-from ._code import (
-    all_around,
-    colors,
-    experimental,
-    formatting,
-    images,
-    imports,
-    input_output,
-    jupyter_ipython,
-    pytorch,
-    system_info,
-    time_and_date,
-    type_check
-)
 
-# Import certain things from those modules which should only be partially visible
-from ._code.country_converter import country_converter
-from ._code._search import search
+# Import main modules
+_all_modules_str = ["all_around", "colors", "experimental", "formatting", "images", "imports", "input_output",
+                    "jupyter_ipython", "pytorch", "system_info", "time_and_date", "type_check", "country_converter"]
 
+# This is not pretty I'll admit that, but believe or not, this was the only way i could get dynamic imports
+# and a search function up an running without all sorts shenanigans. Just move on, don't worry about it :)
+all_searchable = []
+for module in _all_modules_str:
+    exec(f"from ._code import {module}")
+    exec(f"module_all = {module}.__all__") # Every module in `_code` has everything which should be visible in `__all__`
+    exec("all_searchable += [f'{module}.{s}' for s in module_all]")
+
+import os as _os
+_code_path = _os.path.abspath(__file__)[:-11]
+
+def search(name:str):
+    """
+    DESCRIPTION:
+    Search `utils` for everything importable which contains `name`.
+    NOTE: The function is case insensitive e.g. 'RGB' and 'rgb' are interpreted the same
+    """
+    if not isinstance(name, str):
+        TypeError(f"Expected type `str`, but received type `{type(name)}`")
+
+    matching_results = [search_result for search_result in all_searchable if name.lower() in search_result.lower()]
+    return sorted(matching_results)
 
 #________________________________________________________________________________________________________________
 # TODO and ideas:

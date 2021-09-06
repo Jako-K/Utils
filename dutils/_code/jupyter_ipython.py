@@ -1,6 +1,5 @@
 import IPython as _IPython
 import matplotlib.pyplot as _plt
-import torchaudio as _torchaudio
 from PIL import Image as _Image
 
 from . import type_check as _type_check
@@ -45,6 +44,8 @@ def adjust_screen_width(percentage:int=75):
 
 def play_audio(path:str, plot:bool=True):
     """ Load a sound and display it if `plot` is True. Use torchaudio, so only support what they do."""
+    import torchaudio as _torchaudio # Move this to other imports, when the "sox warning shenanigans" has been fixed
+
     #Tests
     assert_in_jupyter()
     _input_output.assert_path(path)
