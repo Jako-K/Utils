@@ -154,7 +154,7 @@ def hex_to_rgb(hex_color: str):
 def rgb_to_hex(rgb_color):
     _type_check.assert_type(rgb_color, (tuple, list))
     if not is_legal_rgb(rgb_color):
-        raise ValueError(f"`{rgb_color=}` is not recognized as a RGB color")
+        raise ValueError(f"`rgb_color={rgb_color}` is not recognized as a RGB color")
     return "#" + '%02x%02x%02x' % tuple(rgb_color)
 
 
