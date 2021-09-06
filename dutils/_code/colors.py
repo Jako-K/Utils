@@ -147,7 +147,7 @@ def random_color(amount:int=1, color_type:str="rgb", min_rgb:int=0, max_rgb:int=
 def hex_to_rgb(hex_color: str):
     _type_check.assert_type(hex_color, str)
     if not is_legal_hex(hex_color):
-        raise ValueError(f"`{hex_color=}` is not recognized as a HEX color")
+        raise ValueError(f"`hex_color={hex_color}` is not recognized as a HEX color")
     return _ImageColor.getcolor(hex_color, "RGB")
 
 
