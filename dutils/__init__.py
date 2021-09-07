@@ -1,7 +1,7 @@
 """
 DESCRIPTION:
 A bunch modules with helper functions.
-`dutils.search("what_you_want_to_search_for")` can help you find what you're looking for
+NOTE: `dutils.search("what_you_want_to_search_for")` can help you find what you're looking for
 
 EXAMPLE:
 >> `dutils.search("image")`
@@ -19,8 +19,8 @@ EXAMPLE:
 _all_modules_str = ["all_around", "colors", "experimental", "formatting", "images", "imports", "input_output",
                     "jupyter_ipython", "pytorch", "system_info", "time_and_date", "type_check", "country_converter"]
 
-# This is not pretty I'll admit that, but believe or not, this was the only way i could get dynamic imports
-# and a search function up an running without all sorts shenanigans. Just move on, don't worry about it :)
+# This is admittedly not a pretty solution, but believe or not, this was the only way i could get dynamic imports
+# and a search function working without all sorts shenanigans. Just move on, don't worry about it :)
 all_searchable = []
 for module in _all_modules_str:
     exec(f"from ._code import {module}")
