@@ -10,7 +10,7 @@ INTENDED USE:
 # EXAMPLE:
 project_display_name = "Mask Detection Dataset"
 project_folder_name = "mask-detection-dataset"
-upload_folder_path = "C:/Users/JK/Desktop/datasets/mask_dataset_yolo"
+upload_folder_path = "C:/<some_path>/datasets/mask_dataset_yolo"
 !python _upload_dataset_to_kaggle.py
 
 """
@@ -27,7 +27,7 @@ upload_folder_path = "C:/Users/JK/Desktop/datasets/mask_dataset_yolo"
 
 
 # Checks
-assert project_folder_name.find("_") == -1, "Kaggle dosn't accept underscores, use '-' instead"
+assert project_folder_name.find("_") == -1, "Kaggle doesn't accept underscores, use '-' instead"
 assert not os.path.exists("./dataset-metadata.json"), "This should have been deleted"
 
 
@@ -59,5 +59,5 @@ os.remove("./dataset-metadata.json")
 os.remove(f"./{project_folder_name}.zip")
 
 
-# `name_search` expect __all__ to contain everything searchable
+# `dutils.search` expects __all__ to contain everything searchable
 __all__ = []

@@ -110,7 +110,6 @@ class StopWatch:
 
 class FPSTimer:
     """
-    Function description:
     Keep track of frames per second.
 
     Example:
@@ -150,14 +149,10 @@ class FPSTimer:
         self._start_time = _time.time()
 
 
-    def _get_elapsed_time(self):
-        return round(_time.time() - self._start_time, self.precision_decimals)
-
-
     def increment(self):
         if self._start_time is None:
             raise RuntimeError("Call `start()` before you call `increment()`")
-        self.ticks.append(self._get_elapsed_time())
+        self.ticks.append( _time.time() - self._start_time )
 
 
     def get_frame_count(self):

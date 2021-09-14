@@ -2,8 +2,7 @@
 Description
 Stuff that hasen't been tested
 """
-
-
+import numpy as np
 import pydicom as _dicom
 import matplotlib.pylab as _plt
 import numpy as _np
@@ -13,6 +12,8 @@ from . import images as _images
 from . import colors as _colors
 from . import type_check as _type_check
 from . import input_output as _input_output
+from . import pytorch as _pytorch
+from . import time_and_date as _time_and_date
 
 def show_dicom(path:str):
     # Checks
@@ -48,8 +49,6 @@ def get_colors(colors:list, color_scheme="seaborn", color_type="rgb"):
     return [_colors.convert_color(scheme[color], color_type) for color in colors]
 
 
-# These are supposed to be inside colors.convert put haven't gotten around to it, 
-# so are just going to but them here for now
 def BGR2RGB(image:_np.ndarray):
     return _cv2.cvtColor(image, _cv2.COLOR_BGR2RGB)
 def RGB2BGR(image:_np.ndarray):
@@ -109,6 +108,12 @@ def plot_average_uncertainty(data, stds=2):
     _plt.show()
 
     return fig
+
+
+
+
+
+
 
 
 __all__ = [

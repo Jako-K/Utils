@@ -44,6 +44,9 @@ def search(name:str):
 
 #________________________________________________________________________________________________________________
 # TODO and ideas:
+# 1.) Fix system info print, when not nvidia and remove pytorch cuda depedencies.
+# 2.) Find a way to check that __all__ contains everything
+# 3.) Check if there's a raise in front of all errors 
 
 # Integrate pandas_profiling in some way, perhaps just a "print what you're supposed to do" kinda thing
 # Make pandas print helper: "df.describe(), df.info() ..." just a bunch of different pandas commands in one place
@@ -60,5 +63,4 @@ def search(name:str):
 # 	px.colors.qualitative.swatches().show()
 # 	pio.templates.default = "seaborn"
 # 	print(px.colors.qualitative.Plotly)
-#
 #________________________________________________________________________________________________________________

@@ -97,7 +97,7 @@ def assert_list_slow(to_check:list, expected_type, expected_length:int=None, all
 def assert_in(to_check, check_in):
     """
     Function description:
-    Check if that the value `to_check` is present in `check_in`
+    Check if the value `to_check` is present in `check_in`
 
     @param to_check: Value to be checked
     @param check_in: Values `to_check` is being checked against

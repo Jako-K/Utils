@@ -1,16 +1,27 @@
 import sys as _sys
-_sys.path.append("../_code")
+import os
+import pathlib
+
+# Adds path of dutils. It's just easier this way, don't worry about it
+test_folder_path = os.path.abspath(__file__[:-11])
+dutils_path = pathlib.Path(test_folder_path).parent.absolute()
+
+# My folder structure is different then that of the pip installed one
+if "dutils" in str(dutils_path):
+    dutils_path = dutils_path.parent.absolute()
+
+_sys.path.append(str(dutils_path))
 
 # Tests things which are kinda annoying: plots (manually close), prints etc.
 VERBOSE = False
-
-import os
 import pandas as _pd
 import numpy as _np
 import os as _os
 from glob import glob as _glob
 import types as _types
+import cv2 as _cv2
 import unittest
+
 
 from dutils._code import input_output
 
@@ -280,6 +291,39 @@ class Test_images(unittest.TestCase):
         self.assertEqual(len(load_image("./test_alpha.png", "grey").shape), 2)
         self.assertEqual(load_image("./test_alpha.png", "unchanged_bgr").shape[2], 4)
 
+
+    def test_rotate_images(self):
+        img = _cv2.imread("./dragon.jpg")
+        self.assertEqual(_cv2.rotate(img, cv2_rotate_map[90]).shape, (606, 465, 3))
+        self.assertEqual(_cv2.rotate(img, cv2_rotate_map[180]).shape, (465, 606, 3))
+        self.assertEqual(_cv2.rotate(img, cv2_rotate_map[270]).shape, (606, 465, 3))
+
+
+    def test_assert_ndarray_image(self):
+        grey = load_image("./test_grey.png")
+        color = load_image("./test_image.png")
+        alpha = load_image("./test_alpha.png")
+
+        assert_ndarray_image(color)  # ok
+        assert_ndarray_image(color, "color")  # ok
+        assert_ndarray_image(alpha)  # ok
+        assert_ndarray_image(alpha, "color")  # ok
+        assert_ndarray_image(grey)  # ok
+        assert_ndarray_image(grey, "grey")  # ok
+        assert_ndarray_image(grey, "gray")  # ok
+        assert_ndarray_image(color)  # ok
+        assert_ndarray_image(grey)  # ok
+        assert_ndarray_image(grey, "gray")  # ok
+        assert_ndarray_image(alpha)  # ok
+        assert_ndarray_image(alpha, "color")  # ok
+
+        with self.assertRaises(ValueError): assert_ndarray_image(grey, "asd")
+        with self.assertRaises(ValueError): assert_ndarray_image(grey.flatten())
+        with self.assertRaises(ValueError): assert_ndarray_image(_np.array([[123, 23], [14, -12]]), "gray")
+        with self.assertRaises(TypeError): assert_ndarray_image(_np.array([[123, 123], [12124, 12]]), "gray")
+        with self.assertRaises(TypeError): assert_ndarray_image(color / 255., "grey")
+        with self.assertRaises(ValueError): assert_ndarray_image(color, "grey")
+        with self.assertRaises(ValueError): assert_ndarray_image(grey, "color")
 
 ########################################################################################################################
 ##########################################             imports                ##########################################

@@ -1,4 +1,5 @@
 # TODO: Add unit tests
+# TODO: Combine
 
 import numpy as _np
 from PIL import Image as _Image
@@ -10,45 +11,79 @@ from . import type_check as _type_check
 from . import colors as _colors
 from . import input_output as _input_output
 from . import jupyter_ipython as _jupyter
+from . import time_and_date as _time_and_date
+from . import pytorch as _pytorch
 
 
-def is_ndarray_greyscale(image: _np.ndarray):
-    """ Try and determine if `image` is greyscale/has only 1 channel """
+def _is_ndarray_greyscale(image: _np.ndarray):
+    """
+    Try and determine if `image` is greyscale/has only 1 channel.
+    NOTE: This should only be used together with `assert_ndarray_image`
+    """
     _type_check.assert_type(image, _np.ndarray)
     if len(image.shape) == 2:
         return True
-    elif (len(image.shape) == 3) and (len(image.shape[2]) == 1):
+    elif (len(image.shape) == 3) and (image.shape[2] == 1):
         return True
     else:
         return False
 
 
-def assert_ndarray_image(image: _np.ndarray):
-    """ Function description: Try and ensure that `image` is legitimate """
+def _is_ndarray_color(image: _np.ndarray):
+    """
+    Try and determine if `image` is a color image (accept the present of an alpha channel)
+    NOTE: This should only be used together with `assert_ndarray_image`
+    """
     _type_check.assert_type(image, _np.ndarray)
-    is_greyscale = True if len(image.shape) == 2 else False
+    if _is_ndarray_greyscale(image):
+        return False
+    elif image.shape[2] not in [3, 4]:
+        return False
+    else:
+        return True
 
-    if len(image.shape) != (2 if is_greyscale else 3):
-        ValueError(f"Expected 3 dimensional shape for non-greyscale image (dim1 x dim2 x channels). "
-                   f"Received shape `{image.shape}`")
+
+def assert_ndarray_image(image: _np.ndarray, color_type:str=None):
+    """ Try and ensure that `image` is legitimate """
+    # Checks
+    _type_check.assert_types([image, color_type], [_np.ndarray, str], [0, 1])
+    legal_color_types = ["grey", "gray", "color", None]
+    if color_type not in legal_color_types:
+        raise ValueError(f"Expected `color_type={color_type}` to be in `{legal_color_types}`")
+
+    is_greyscale = _is_ndarray_greyscale(image)
+
     if image.min() < 0:
-        ValueError("Detected a negative value in np.ndarray image, this is not allowed.")
+        raise ValueError("Detected a negative values in np.ndarray image. Consider using `numpy.clip` to get rid of them")
+
+    if (len(image.shape) != 3) and (not is_greyscale):
+        raise ValueError(f"Expected 3 dimensional shape for non-greyscale images (dim1 x dim2 x channels). "
+                         f"Received shape `{image.shape}`")
 
     if image.dtype != 'uint8':
-        raise TypeError(f"Expected `image` to be of dtype uint8, but received `{image.dtype}`. "
-                        f"If `image` is in 0.0-1.0 float format, "
-                        "try casting it with: `image = (image * 255).astype(np.uint8)`.")
+        extra = ""
+        if 'f' in str(image.dtype):
+            extra = " If `image` is in 0.0-1.0 float format, try casting it with: `image = (image * 255).astype(np.uint8)`"
+        raise TypeError(f"Expected `image` to be of dtype `uint8`, but received `{image.dtype}`.{extra}")
+
 
     if not is_greyscale:
         num_channels = image.shape[2]
         if num_channels not in [3, 4]:
-            ValueError(f"Received an unknown number of color channels: `{num_channels}`. "
-                       f"Accepted number of channels are 1, 3 and 4 (Greysacle, RGB and RGBA respectively) ")
+            raise ValueError(f"Received an unknown number of color channels: `{num_channels}`. "
+                       f"Accepted number of channels are 1, 3 and 4 (Greyscale, RGB and RGBA respectively) ")
+
+    expect_grey = color_type in ["grey", "gray"]
+    expect_color = color_type == "color"
+
+    if color_type is None:
+        return
+    elif (expect_grey and not is_greyscale) or (expect_color and not _is_ndarray_color(image)):
+        raise ValueError(f"Failed to categorize `image` as `{color_type}`")
 
 
 def pillow_resize_image(image: _Image.Image, resize_factor: float = 1.0):
     """
-    Function description:
     Resize `image` according to `resize_factor`
 
     @param image: Image in PIL.Image format
@@ -107,7 +142,6 @@ def ndarray_image_to_pillow(image: _np.ndarray, BGR2RGB: bool = True):
 
 def ndarray_resize_image(image: _np.ndarray, resize_factor: float):
     """
-    Function description:
     Resize `image` according to `resize_factor`
 
     @param image: Image in np.ndarray format
@@ -127,7 +161,6 @@ def ndarray_resize_image(image: _np.ndarray, resize_factor: float):
 
 def show_image( path: str, resize_factor: float = 1.0):
     """
-    Function description:
     Display a single image from `path` (works in standard python and jupyter environment)
 
     @param path: Path to an image
@@ -154,7 +187,6 @@ def show_image( path: str, resize_factor: float = 1.0):
 
 def show_ndarray_image(image: _np.ndarray, resize_factor: float = 1.0, name: str = "", BGR2RGB:bool = False):
     """
-    Function description:
     Display a single image from a `np.ndarray` source (works in standard python and jupyter environment)
 
     @param image: Image in np.ndarray format
@@ -186,7 +218,6 @@ def show_ndarray_image(image: _np.ndarray, resize_factor: float = 1.0, name: str
 
 def ndarray_image_center(image: _np.ndarray, WxH: bool = True):
     """
-    Function description:
     Calculate the center of an image
 
     @param image: Image in np.ndarray format
@@ -203,7 +234,6 @@ def ndarray_image_center(image: _np.ndarray, WxH: bool = True):
 
 def cv2_cutout_square(image: _np.ndarray, p1:tuple, p2:tuple, inverse:bool = False):
     """
-    Function description:
     Cutout a square from an image or everything except a square if inverse=True
 
     Example:
@@ -238,7 +268,6 @@ def cv2_cutout_square(image: _np.ndarray, p1:tuple, p2:tuple, inverse:bool = Fal
 def cv2_sobel_edge_detection(image: _np.ndarray, blur_kernel_size: int = 5,
                              horizontal: bool = True, vertical: bool = True):
     """
-    Function description:
     Perform sobel edge detection on `image` according to `blur_kernel_size`.
     Support both vertical and horizontal sobel filter together or alone.
 
@@ -341,27 +370,157 @@ def load_image(path: str, load_type: str = "unchanged_bgr"):
                         "gray": _cv2.IMREAD_GRAYSCALE,
                         "rgb": _cv2.IMREAD_COLOR,
                         "bgr": _cv2.IMREAD_COLOR,
-                        "unchanged_bgr": _cv2.IMREAD_UNCHANGED,
-                        "unchanged_rgb": _cv2.IMREAD_UNCHANGED}
+                        "unchanged": _cv2.IMREAD_UNCHANGED}
 
     if load_type.lower() not in legal_load_types:
         raise ValueError(f"Expected `load_type` to be in `{list(legal_load_types.keys())}`,"
-                         f"but recived `{load_type}`")
+                         f"but received `{load_type}`")
 
     if load_type in ["rgb", "bgr"]:
         if len(_cv2.imread(path, _cv2.IMREAD_UNCHANGED).shape) == 2:
-            _warnings.warn(f"`{path}` contains a greyscale image, but recived `load_type = {load_type}`"
+            _warnings.warn(f"`{path}` contains a greyscale image, but received `load_type = {load_type}`"
                           f"Will return a greyscale image in RGB format i.e. R = G = B")
 
     # Load image
     image = _cv2.imread(path, legal_load_types[load_type])
-    if load_type in ["rgb", "unchanged_rgb"]:
+    if load_type == "rgb":
         image = _cv2.cvtColor(image, _cv2.COLOR_BGR2RGB)
 
     return image
 
+
+cv2_rotate_map = {
+    0: None,
+    90: _cv2.ROTATE_90_CLOCKWISE,
+    -90: _cv2.ROTATE_90_COUNTERCLOCKWISE,
+    180: _cv2.ROTATE_180,
+    -180: _cv2.ROTATE_180,
+    -270: _cv2.ROTATE_90_CLOCKWISE,
+    270: _cv2.ROTATE_90_COUNTERCLOCKWISE
+}
+
+
+def rotate_image(img: _np.ndarray, rotate_angle: int):
+    """ 
+    Rotate `img` by `rotate_angle`.
+    
+    @param img: Images of type np.ndarray
+    @param rotate_angle: Degrees `img` is rotated by. NOTE: must be a multiple 90
+    """
+
+    # Checks
+    _type_check.assert_types([img, rotate_angle], [_np.ndarray])
+    if rotate_angle not in list(cv2_rotate_map.values()):
+        raise ValueError(
+            f"`rotate_angle={rotate_angle}` is not valid. Legal values are: "
+            f"`{list(cv2_rotate_map.values())}`"
+        )
+
+    rotate_by = cv2_rotate_map[rotate_angle]
+    return _cv2.rotate(img, rotate_by) if (rotate_by is not None) else img
+
+
+class Cv2Webcam:
+    """
+    A simple class that makes it easier to work with frames captured by webcam.
+
+    NOTES:
+    * Intended use through the abstract method `on_update`.
+    * Quit on `q`
+    * Save frame on `space`
+
+    EXAMPLE:
+    class Cam(Cv2Webcam):
+        def on_update(self):
+            ...
+            Do some cool stuff with the captured frame which can be accessed through `self.frame`
+            ...
+            return altered_frame_for_display
+
+    new_cam = Cam()
+    new_cam.start()
+    """
+
+
+    def __init__(self, webcam:int=0, show_fps:bool=True):
+        _type_check.assert_types([webcam, show_fps], [int, bool])
+        self.webcam = webcam
+        self.frame = None
+        self.video_feed = None
+        self.is_live = None
+        self.show_fps = show_fps
+        self.fps_timer = _time_and_date.FPSTimer(precision_decimals=1)
+
+
+    def start(self):
+        """ Start webcam, fps_timer and main loop """
+        self.is_live = True
+        self.video_feed = _cv2.VideoCapture(self.webcam)
+        self.fps_timer.start()
+        self._on_update()
+
+
+    def _on_update(self):
+        """ Main loop """
+        while self.is_live:
+            _, self.frame = self.video_feed.read()
+            frame = self.on_update()
+            _type_check.assert_type(frame, _np.ndarray, True)
+
+
+            if frame is not None:
+                # Add fps if it's defined
+                if self.show_fps:
+                    _cv2.putText(frame, f"FPS: {self.fps_timer.get_fps()}", (10, 20),
+                                 _cv2.FONT_HERSHEY_DUPLEX, 0.5, (128, 128, 128), 1, _cv2.LINE_AA)
+
+                _cv2.imshow('frame', frame)
+
+            pressed_key = _cv2.waitKey(1)
+
+            # q pressed -> quit
+            if pressed_key & 0xFF == ord('q'):
+                self.is_live = False
+                self.video_feed.release()
+                _cv2.destroyAllWindows()
+
+            # Space pressed -> save frame
+            elif pressed_key % 256 == 32:
+                img_name = _pytorch.get_model_save_name("cv2_frame.png", separator=" ")
+                _cv2.imwrite(img_name, frame)
+
+            self.fps_timer.increment()
+
+
+    def on_update(self):
+        """
+        Abstract method which is called on every captured frame.
+
+        Note:
+        * The current frame can be accessed through `self.frame`
+        * Save frame on `space`
+        * Quit on `q`
+
+
+        @return: A frame which will be displayed in cv2. Must have type `np.ndarray` or `None`.
+                       If `None` is returned no frame will be displayed
+        """
+        raise NotImplementedError("`on_update` must be implemented")
+
+
+def ndarray_bgr2rgb(image: _np.ndarray):
+    """ Convert `image` from BGR -> RGB """
+    assert_ndarray_image(image, "color")
+    return _cv2.cvtColor(image, _cv2.COLOR_BGR2RGB)
+
+
+def ndarray_rgb2bgr(image: _np.ndarray):
+    """ Convert `image` from BGR -> RGB """
+    assert_ndarray_image(image, "color")
+    return _cv2.cvtColor(image, _cv2.COLOR_RGB2BGR)
+
+
 __all__ = [
-    "is_ndarray_greyscale",
     "assert_ndarray_image",
     "pillow_resize_image",
     "pillow_image_to_ndarray",
@@ -376,4 +535,9 @@ __all__ = [
     "cv2_sobel_edge_detection",
     "cv2_draw_bounding_boxes",
     "load_image",
+    "cv2_rotate_map",
+    "rotate_image",
+    "Cv2Webcam",
+    "ndarray_bgr2rgb",
+    "ndarray_rgb2bgr",
 ]

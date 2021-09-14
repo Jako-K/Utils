@@ -453,7 +453,7 @@ def get_model_save_name(model_name:str, to_add: dict=None, separator: str = "  .
     Adds useful information to model save file such as date, time and metrics.
 
     Example:
-    >> get_model_save_name( {"valid_loss":valid_mean}, "model.pth", "  |  ")
+    >> get_model_save_name("model.pth", {"valid_loss":123}, "  |  ")
     "time 17.25.32 03-05-2021  |  valid_loss 0.72153  |  model_name.pth"
 
     @param to_add: Dictionary which contain information which will be added to the model save name e.g. loss
