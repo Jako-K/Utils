@@ -39,7 +39,7 @@ seaborn_colors = {"blue": seaborn_blue,
                   "grey": seaborn_grey,
                   "white": seaborn_white}
 
-legal_types = ["rgb", "hex"]
+_legal_types = ["rgb", "hex"]
 _scheme_name_to_colors = {"seaborn": seaborn_colors}
 _colors_schemes = list(_scheme_name_to_colors.keys())
 
@@ -75,30 +75,34 @@ def get_color_type(color):
 def _assert_type_str(color_type: str):
     """ assert color type is supported """
     _type_check.assert_type(color_type, str)
-    if color_type not in legal_types:
-        raise ValueError(f"Received unknown color type `{color_type}`. Legal types are: `{legal_types}`")
+    if color_type not in _legal_types:
+        raise ValueError(f"Received unknown color type `{color_type}`. Legal types are: `{_legal_types}`")
 
 
 def assert_color(color):
     """ Detect color type and assert it's supported """
     if get_color_type(color) is None:
-        raise TypeError(f"Color format cannot be interpreted. Legal color types are: `{legal_types}`")
+        raise TypeError(f"Color format cannot be interpreted. Legal color types are: `{_legal_types}`")
 
 
 def _assert_color_scheme(scheme: str):
     """ assert color scheme is supported """
     _type_check.assert_type(scheme, str)
     if scheme not in _colors_schemes:
-        raise ValueError(f"Received unknown color scheme {scheme}. Legal types: {_colors_schemes}")
+        raise ValueError(f"Received unknown color scheme `{scheme}`. Legal types: `{_colors_schemes}`")
 
 
 def _assert_color_word(color_name:str, scheme_name:str):
-    """ Check if `color_name` is in `scheme_name` (scheme is assumed legal) """
+    """ Check if `color_name` is in `scheme_name` """
+    # Checks
     _type_check.assert_types([color_name, scheme_name], [str, str])
     _assert_color_scheme(scheme_name)
+
     color_scheme = _scheme_name_to_colors[scheme_name]
-    if color_name not in color_scheme.keys():
-        raise ValueError(f"Color `{color_name}` is not present in color scheme `{scheme_name}`")
+    legal_colors = list(color_scheme.keys())
+    if color_name not in legal_colors:
+        raise ValueError(f"The color `{color_name}` is not present in the color scheme `{scheme_name}`.\n"
+                         f" Legal colors in `{scheme_name}`: {legal_colors}")
 
 
 def convert_color(color, convert_to:str):
@@ -163,6 +167,7 @@ def color_from_name(color_name:str, color_type:str="rgb", color_scheme:str="seab
     Return color of name `color_name` from `color_scheme` in the format defined by `color_type`.
     Note: `color_name` should only contain the acutal color e.g. "blue" without prefix e.g. "seaborn_blue"
     """
+
     _type_check.assert_types([color_name, color_type, color_scheme], [str, str, str])
     _assert_type_str(color_type)
     _assert_color_scheme(color_scheme)
@@ -205,7 +210,7 @@ def display_colors(colors: list):
         ax.add_patch(rect)
 
         # Write colors in all legal formats
-        for j, color_type in enumerate(legal_types):
+        for j, color_type in enumerate(_legal_types):
             color_text = convert_color(color, color_type)
             if color_type == "rgb":
                 color_text = [" " * (3 - len(str(c))) + str(c) for c in color]
@@ -233,23 +238,31 @@ def get_color_scheme(color_scheme:str, color_type:str= "rgb"):
     return [convert_color(color, color_type) for color in colors]
 
 
-__all__ = [
-    # Constants
-    "seaborn_blue",
-    "seaborn_orange",
-    "seaborn_green",
-    "seaborn_red",
-    "seaborn_purple",
-    "seaborn_brown",
-    "seaborn_pink",
-    "seaborn_grey",
-    "seaborn_white",
-    "seaborn_colors",
-    "legal_types",
-    "_scheme_name_to_colors",
-    "_colors_schemes",
+def get_colors(colors: list, color_scheme="seaborn", color_type="rgb", detailed: bool = False):
+    """
+    Return every color:str in `colors` from `color_scheme` in format `color_type`.
 
-    # Functions
+    @param colors: List of colors in plain english e.g. "blue"
+    @param color_scheme: Color scheme e.g. "seaborn"
+    @param color_type: Format of colors e.g. "rgb"
+    @param detailed: If true return a dict with name of color and value e.g. `{"blue":(31, 119, 180)}`.
+                     If false, returns a list of values instead.
+    @return: List of colors or dict with colors and their name.
+    """
+
+    # Checks
+    _type_check.assert_types([colors, color_scheme, color_type, detailed], [list, str, str, bool])
+
+    return_colors = {}
+    for color in colors:
+        return_colors[color] = color_from_name(color, color_type, color_scheme)
+
+    return return_colors if detailed else list(return_colors.values())
+
+
+__all__ = [
+    "_legal_types",
+    "_scheme_name_to_colors",
     "is_legal_hex",
     "is_legal_rgb",
     "get_color_type",
@@ -263,5 +276,6 @@ __all__ = [
     "rgb_to_hex",
     "color_from_name",
     "display_colors",
-    "get_color_scheme"
+    "get_color_scheme",
+    "get_colors",
 ]

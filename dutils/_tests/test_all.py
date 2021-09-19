@@ -12,8 +12,9 @@ if "dutils" in str(dutils_path):
 
 _sys.path.append(str(dutils_path))
 
+
 # Tests things which are kinda annoying: plots (manually close), prints etc.
-VERBOSE = False
+VERBOSE = True
 import pandas as _pd
 import numpy as _np
 import os as _os
@@ -129,7 +130,7 @@ class Test_colors(unittest.TestCase):
         with self.assertRaises(ValueError): _assert_type_str("something")
         with self.assertRaises(ValueError): _assert_type_str("lalal")
         with self.assertRaises(TypeError): _assert_type_str(None)
-        for color_type in legal_types:
+        for color_type in _legal_types:
             _assert_type_str(color_type)
 
 
@@ -212,7 +213,7 @@ class Test_colors(unittest.TestCase):
 
         for scheme, scheme_colors in _scheme_name_to_colors.items():
             for color in scheme_colors:
-                for color_type in legal_types:
+                for color_type in _legal_types:
                     color_from_name(color, color_type, scheme)
 
 
@@ -236,6 +237,17 @@ class Test_colors(unittest.TestCase):
             '#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#e1ffff'
         ])
 
+
+    def test_get_color(self):
+        with self.assertRaises(TypeError): get_colors([1])
+        with self.assertRaises(ValueError): get_colors([""])
+        with self.assertRaises(ValueError): get_colors(["bluee"])
+        with self.assertRaises(ValueError): get_colors(["blue", "green"], color_type="asd", detailed=True)
+
+        self.assertEqual(get_colors(["blue"]), [(31, 119, 180)])
+        self.assertEqual(get_colors(["blue", "green"]), [(31, 119, 180), (44, 160, 44)])
+        self.assertEqual(get_colors(["blue", "green"], color_type="hex"), ['#1f77b4', '#2ca02c'])
+        self.assertEqual(get_colors(["blue", "green"], color_type="hex", detailed=True), {'blue': '#1f77b4', 'green': '#2ca02c'})
 
 ########################################################################################################################
 ##########################################             Formatting                #######################################
@@ -277,19 +289,18 @@ class Test_images(unittest.TestCase):
     def test_load_images(self):
         # Grey
         self.assertEqual(len(load_image("./test_grey.png").shape), 2)
-        if VERBOSE:
-            self.assertEqual(load_image("./test_grey.png", "rgb").shape[2], 3)
-        self.assertEqual(len(load_image("./test_grey.png", "unchanged_bgr").shape), 2)
+        self.assertEqual(load_image("./test_grey.png", "rgb").shape[2], 3)
+        self.assertEqual(len(load_image("./test_grey.png", "unchanged").shape), 2)
 
         # RGB
         self.assertEqual(load_image("./test_image.png", "rgb").shape[2], 3)
         self.assertEqual(len(load_image("./test_image.png", "grey").shape), 2)
-        self.assertEqual(load_image("./test_image.png", "unchanged_bgr").shape[2], 3)
+        self.assertEqual(load_image("./test_image.png", "unchanged").shape[2], 3)
 
         # Alpha
         self.assertEqual(load_image("./test_alpha.png", "rgb").shape[2], 3)
         self.assertEqual(len(load_image("./test_alpha.png", "grey").shape), 2)
-        self.assertEqual(load_image("./test_alpha.png", "unchanged_bgr").shape[2], 4)
+        self.assertEqual(load_image("./test_alpha.png", "unchanged").shape[2], 4)
 
 
     def test_rotate_images(self):
@@ -324,6 +335,15 @@ class Test_images(unittest.TestCase):
         with self.assertRaises(TypeError): assert_ndarray_image(color / 255., "grey")
         with self.assertRaises(ValueError): assert_ndarray_image(color, "grey")
         with self.assertRaises(ValueError): assert_ndarray_image(grey, "color")
+
+
+    def test_show_hist(self):
+        if VERBOSE:
+            image = load_image("./dragon.jpg", load_type="rgb")
+            show_hist(image)
+            image = load_image("./dragon.jpg", load_type="grey")
+            show_hist(image)
+
 
 ########################################################################################################################
 ##########################################             imports                ##########################################

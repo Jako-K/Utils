@@ -6,6 +6,7 @@ from PIL import Image as _Image
 import requests as _requests
 import cv2 as _cv2
 import warnings as _warnings
+import matplotlib.pyplot as _plt
 
 from . import type_check as _type_check
 from . import colors as _colors
@@ -350,14 +351,13 @@ def cv2_draw_bounding_boxes(image: _np.ndarray, p1: tuple, p2: tuple, label: str
         _cv2.putText(image, text, (p1[0], p1[1] - 2), _cv2.FONT_HERSHEY_DUPLEX, 0.5, color, 1, _cv2.LINE_AA)
 
 
-def load_image(path: str, load_type: str = "unchanged_bgr"):
+def load_image(path: str, load_type: str = "unchanged"):
     """
     Load an image in np.ndarray format. Support grayscale, RGB, BGR, RGBA and BGRA
 
     @param path: Image path
-    @param load_type: Image format that will be return, legal values:
-                      ['grey', 'gray', 'rgb', 'bgr', 'unchanged_bgr', 'unchanged_rgb']
-    @param return: Image at `path` in the format specified by `load_type`
+    @param load_type: Image format that will be return. Legal values: ['grey', 'gray', 'rgb', 'bgr', 'unchanged']
+    @return: Image at `path` in the format specified by `load_type`
 
     """
 
@@ -378,7 +378,7 @@ def load_image(path: str, load_type: str = "unchanged_bgr"):
 
     if load_type in ["rgb", "bgr"]:
         if len(_cv2.imread(path, _cv2.IMREAD_UNCHANGED).shape) == 2:
-            _warnings.warn(f"`{path}` contains a greyscale image, but received `load_type = {load_type}`"
+            _warnings.warn(f"`{path}` is a greyscale image, but received `load_type = {load_type}`"
                           f"Will return a greyscale image in RGB format i.e. R = G = B")
 
     # Load image
@@ -389,6 +389,7 @@ def load_image(path: str, load_type: str = "unchanged_bgr"):
     return image
 
 
+# Just easier this way, I have to look them up every time otherwise
 cv2_rotate_map = {
     0: None,
     90: _cv2.ROTATE_90_CLOCKWISE,
@@ -520,6 +521,37 @@ def ndarray_rgb2bgr(image: _np.ndarray):
     return _cv2.cvtColor(image, _cv2.COLOR_RGB2BGR)
 
 
+def show_hist(image:_np.ndarray):
+    """ If image has 3 channels its expected to be RGB not BRG """
+    _type_check.assert_type(image, _np.ndarray)
+    assert_ndarray_image(image)
+
+    if len(image.shape) == 2:
+        image = _np.expand_dims(image, axis=2)
+
+    channels = image.shape[2]
+    if channels not in [1, 3]:
+        raise ValueError("Expected `image` to have 1 or 3 channels, but recieved `{images.shape[2]}`")
+
+    if channels == 3: #RGB image
+        colors = _colors.get_colors(["red", "green", "blue"], "seaborn", "hex")
+        fig, axes = _plt.subplots(3, 1, figsize=(15, 15))
+        titles = ["Red", "Green", "Blue"]
+    elif channels == 1:
+        colors = ["grey"]
+        fig, axes = _plt.subplots(figsize=(15,5))
+        titles = ["Greyscale"]
+
+    for i in range(channels):
+        ax = axes[i] if image.shape[2] > 1 else axes
+        ax.hist(_np.ndarray.flatten(image[:,:,i]), color=colors[i], bins=255)
+        ax.set_title(titles[i] + " Color Channel")
+        ax.set_ylabel("Pixel count")
+    ax.set_xlabel("Pixel value")
+
+    _plt.show()
+
+
 __all__ = [
     "assert_ndarray_image",
     "pillow_resize_image",
@@ -540,4 +572,5 @@ __all__ = [
     "Cv2Webcam",
     "ndarray_bgr2rgb",
     "ndarray_rgb2bgr",
+    "show_hist",
 ]

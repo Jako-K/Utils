@@ -20,7 +20,7 @@ _all_modules_str = ["all_around", "colors", "experimental", "formatting", "image
                     "jupyter_ipython", "pytorch", "system_info", "time_and_date", "type_check", "country_converter"]
 
 # This is admittedly not a pretty solution, but believe or not, this was the only way i could get dynamic imports
-# and a search function working without all sorts shenanigans. Just move on, don't worry about it :)
+# and a search function working without all sorts of shenanigans. Just move on, don't worry about it :)
 all_searchable = []
 for module in _all_modules_str:
     exec(f"from ._code import {module}")
@@ -43,10 +43,14 @@ def search(name:str):
     return sorted(matching_results)
 
 #________________________________________________________________________________________________________________
-# TODO and ideas:
-# 1.) Fix system info print, when not nvidia and remove pytorch cuda depedencies.
+# TODO, notes and ideas:
+# 1.) Fix system info print, when not nvidia and remove pytorch cuda dependencies.
 # 2.) Find a way to check that __all__ contains everything
 # 3.) Check if there's a raise in front of all errors 
+# 4.) Fix the folder structure, such that every sub package e.g. `dutils.image` has its own folder.
+#     This would alleviate much of the import shenanigans
+# 5.) After the folder structure has been fixed, remove "_names" from __all__ e.g. "colors._assert_color_scheme"
+#     which is only there for testing purposes
 
 # Integrate pandas_profiling in some way, perhaps just a "print what you're supposed to do" kinda thing
 # Make pandas print helper: "df.describe(), df.info() ..." just a bunch of different pandas commands in one place
