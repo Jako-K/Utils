@@ -39,7 +39,8 @@ seaborn_colors = {"blue": seaborn_blue,
                   "grey": seaborn_grey,
                   "white": seaborn_white}
 
-_legal_types = ["rgb", "hex"]
+
+_legal_types = ["rgb", "rgb_01", "hex"]
 _scheme_name_to_colors = {"seaborn": seaborn_colors}
 _colors_schemes = list(_scheme_name_to_colors.keys())
 
@@ -62,12 +63,30 @@ def is_legal_rgb(color):
     return True
 
 
+# TODO Update unit tests to include "rgb_01"
+def is_legal_rgb_01(color):
+    """ Legal RGB colors are of type tuple/list and comprised of 3 floats in the range 0-1 """
+    if not isinstance(color, (tuple, list)):  # Is a list or a tuple
+        return False
+    if len(color) != 3:  # Has len 3
+        return False
+    if sum([isinstance(color_channel, float) for color_channel in color]) != 3:  # All channels is of type float
+        return False
+    if sum([0.0 <= color_channel <= 1.0 for color_channel in color]) != 3:  # All channels is within 0-1
+        return False
+
+    return True
+
+
+# TODO Update unit tests to include "rgb_01"
 def get_color_type(color):
     """ Try to detect and return color type, only `legal_types` color types are supported """
     if is_legal_hex(color):
         return "hex"
     elif is_legal_rgb(color):
         return "rgb"
+    elif is_legal_rgb_01(color):
+        return "rgb_01"
 
     return None
 
@@ -105,6 +124,7 @@ def _assert_color_word(color_name:str, scheme_name:str):
                          f" Legal colors in `{scheme_name}`: {legal_colors}")
 
 
+# TODO Update unit tests to include "rgb_01"
 def convert_color(color, convert_to:str):
     """ convert color from one format to another e.g. from RGB --> HEX """
     _type_check.assert_type(convert_to, str)
@@ -112,12 +132,21 @@ def convert_color(color, convert_to:str):
     assert_color(color)
     convert_from_type = get_color_type(color)
 
-    if convert_from_type == convert_to:
+    # Going to convert `color` to RGB format regardless of `convert_to` and `convert_from_type`.
+    # It's necessary to know `convert_from_type` with certainty to avoid a factorial number of if statements
+    # That is, avoid stuff like --> if (convert_from_type == "hex") and (convert_to == "rgb"): ...
+    if convert_from_type != "rgb":
+        if convert_from_type == "hex": color = _hex_to_rgb(color)
+        elif convert_from_type == "rgb_01": [int(c*255) for c in color] # rgb_01 -> rgb
+        else: raise AssertionError("Shouldn't have gotten this far")
+
+
+    if (convert_from_type == convert_to) or (convert_to == "rgb"):
         return color
-    elif (convert_from_type == "rgb") and (convert_to == "hex"):
-        return rgb_to_hex(color)
-    elif (convert_from_type == "hex") and (convert_to == "rgb"):
-        return hex_to_rgb(color)
+    elif convert_to == "hex":
+        return _rgb_to_hex(color)
+    elif convert_to == "rgb_01":
+        return [round(c/255.0,3) for c in color]
     else:
         raise AssertionError("Shouldn't have gotten this far")
 
@@ -148,24 +177,24 @@ def random_color(amount:int=1, color_type:str="rgb", min_rgb:int=0, max_rgb:int=
     return generated_colors[0] if (amount == 1) else generated_colors
 
 
-def hex_to_rgb(hex_color: str):
+def _hex_to_rgb(hex_color: str):
     _type_check.assert_type(hex_color, str)
     if not is_legal_hex(hex_color):
         raise ValueError(f"`hex_color={hex_color}` is not recognized as a HEX color")
     return _ImageColor.getcolor(hex_color, "RGB")
 
 
-def rgb_to_hex(rgb_color):
+def _rgb_to_hex(rgb_color):
     _type_check.assert_type(rgb_color, (tuple, list))
     if not is_legal_rgb(rgb_color):
         raise ValueError(f"`rgb_color={rgb_color}` is not recognized as a RGB color")
     return "#" + '%02x%02x%02x' % tuple(rgb_color)
 
 
-def color_from_name(color_name:str, color_type:str="rgb", color_scheme:str="seaborn"):
+def get_color(color_name:str, color_type:str= "rgb", color_scheme:str= "seaborn"):
     """
-    Return color of name `color_name` from `color_scheme` in the format defined by `color_type`.
-    Note: `color_name` should only contain the acutal color e.g. "blue" without prefix e.g. "seaborn_blue"
+    Return color of name `color_name` from `color_scheme` in the format specified by `color_type`.
+    Note: `color_name` should only contain the acutal color e.g. "blue" without any prefix e.g. "seaborn_blue"
     """
 
     _type_check.assert_types([color_name, color_type, color_scheme], [str, str, str])
@@ -210,7 +239,7 @@ def display_colors(colors: list):
         ax.add_patch(rect)
 
         # Write colors in all legal formats
-        for j, color_type in enumerate(_legal_types):
+        for j, color_type in enumerate(["rgb", "hex"]):
             color_text = convert_color(color, color_type)
             if color_type == "rgb":
                 color_text = [" " * (3 - len(str(c))) + str(c) for c in color]
@@ -255,7 +284,7 @@ def get_colors(colors: list, color_scheme="seaborn", color_type="rgb", detailed:
 
     return_colors = {}
     for color in colors:
-        return_colors[color] = color_from_name(color, color_type, color_scheme)
+        return_colors[color] = get_color(color, color_type, color_scheme)
 
     return return_colors if detailed else list(return_colors.values())
 
@@ -272,9 +301,9 @@ __all__ = [
     "_assert_color_word",
     "convert_color",
     "random_color",
-    "hex_to_rgb",
-    "rgb_to_hex",
-    "color_from_name",
+    "_hex_to_rgb",
+    "_rgb_to_hex",
+    "get_color",
     "display_colors",
     "get_color_scheme",
     "get_colors",

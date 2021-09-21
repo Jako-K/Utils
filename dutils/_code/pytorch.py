@@ -16,6 +16,7 @@ import matplotlib.pyplot as _plt
 
 from . import type_check as _type_check
 from . import system_info as _system_info
+from . import colors as _colors
 
 
 class ArcFaceClassifier(_nn.Module):
@@ -556,6 +557,46 @@ def yolo_draw_single_bb_cv2(image_cv2, x, y, w, h, color=(0, 0, 255)):
     return image_cv2
 
 
+def fold_performance_plot(data:_np.ndarray, stds: int = 1):
+    """
+    Illustrates the performance of each fold individually and as a whole.
+
+    EXAMPLE:
+    # 3 folds each trained for 4 epochs
+    >> data = np.array([[1,2,3,4],
+                        [2,1,4,5],
+                        [3,2,5,1]])
+    >> fold_performance_plot(data)
+
+    @param data: 2D array where the rows are performance data for each fold and the columns are corresponding epochs
+    @param stds: How many standard deviations the combined fold plot is going to have
+    @return: matplotlib.pyplot.fig
+    """
+
+    xs = _np.arange(data.shape[1])
+    std = data.std(0)
+    mean = data.mean(0)
+
+    fig, (ax1, ax2) = _plt.subplots(2, 1, figsize=(15, 10), sharex=True)
+    ax1.set_title("Individually")
+    for i, d in enumerate(data):
+        ax1.plot(d, ".-", label=f"fold {i}")
+    ax1.legend()
+
+    blue, orange = _colors.get_colors(["blue", "orange"], color_type="rgb_01")
+    ax2.set_title("Averaged with uncertainty")
+    ax2.plot(mean, 'o-', color=blue, label='Mean')
+    fig.gca().fill_between(xs, mean - stds * std, mean + stds * std, color=blue,
+                            alpha=0.2, label=str(stds) + r"$\cdot\sigma$")
+    ax2.plot(xs, [mean.mean()] * len(xs), '--', color=orange, label="Mean of means")
+    ax2.set_xticks(xs)
+    ax2.set_xlabel("Epochs")
+    ax2.legend()
+
+    _plt.show()
+    return fig
+
+
 __all__ = [
     "ArcFaceClassifier",
     "arcface_loss",
@@ -570,5 +611,6 @@ __all__ = [
     "get_model_save_name",
     "yolo_bb_from_normal_bb",
     "yolo_draw_bbs_path",
-    "yolo_draw_single_bb_cv2"
+    "yolo_draw_single_bb_cv2",
+    "fold_performance_plot",
 ]

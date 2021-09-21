@@ -52,7 +52,7 @@ def plot_average_uncertainty(data, stds=2):
     ax1.plot(data, ".-")
 
     ax2.set_title("Averaged with uncertainty")
-    ax2.plot(mean, 'o-', color=_colors.seaborn_blue, label='Mean')
+    ax2.plot(mean, 'o-', label='Mean')
     _plt.sca(ax2)  # <-- makes gca work, super wierd but gets the job done
     _plt.gca().fill_between(xs, mean - stds * std, mean + stds * std, color='lightblue', alpha=0.5, label=r"$2\sigma$")
     _plt.plot(xs, [mean.mean()] * len(xs), '--', color=_colors.seaborn_orange, label="Mean of means")

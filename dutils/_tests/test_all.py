@@ -13,8 +13,9 @@ if "dutils" in str(dutils_path):
 _sys.path.append(str(dutils_path))
 
 
-# Tests things which are kinda annoying: plots (manually close), prints etc.
+# If True, tests things which are kinda annoying: plots (manually close), prints etc.
 VERBOSE = True
+
 import pandas as _pd
 import numpy as _np
 import os as _os
@@ -193,23 +194,23 @@ class Test_colors(unittest.TestCase):
 
 
     def test_hex_to_rgb(self):
-        with self.assertRaises(ValueError): hex_to_rgb("#fffff_")
-        with self.assertRaises(TypeError): hex_to_rgb([1,2,3])
-        self.assertEqual(hex_to_rgb("#ffffff"), (255,255,255))
+        with self.assertRaises(ValueError): _hex_to_rgb("#fffff_")
+        with self.assertRaises(TypeError): _hex_to_rgb([1,2,3])
+        self.assertEqual(_hex_to_rgb("#ffffff"), (255,255,255))
 
 
     def test_rgb_to_hex(self):
-        with self.assertRaises(TypeError): rgb_to_hex("[1,2,3]")
-        with self.assertRaises(ValueError): rgb_to_hex([1,2,300])
-        self.assertEqual(rgb_to_hex((255, 255, 255)), "#ffffff")
+        with self.assertRaises(TypeError): _rgb_to_hex("[1,2,3]")
+        with self.assertRaises(ValueError): _rgb_to_hex([1,2,300])
+        self.assertEqual(_rgb_to_hex((255, 255, 255)), "#ffffff")
 
 
-    def test_color_from_name(self):
+    def test_get_color(self):
 
-        with self.assertRaises(TypeError): color_from_name( (0, 0, 0))
-        with self.assertRaises(TypeError): color_from_name("blue", None)
-        with self.assertRaises(ValueError): color_from_name("blue", "not_a_valid_type", "seaborn")
-        with self.assertRaises(ValueError): color_from_name("blue", "rgb", "not_seaborn")
+        with self.assertRaises(TypeError): get_color( (0, 0, 0))
+        with self.assertRaises(TypeError): get_color("blue", None)
+        with self.assertRaises(ValueError): get_color("blue", "not_a_valid_type", "seaborn")
+        with self.assertRaises(ValueError): get_color("blue", "rgb", "not_seaborn")
 
         for scheme, scheme_colors in _scheme_name_to_colors.items():
             for color in scheme_colors:
@@ -289,7 +290,8 @@ class Test_images(unittest.TestCase):
     def test_load_images(self):
         # Grey
         self.assertEqual(len(load_image("./test_grey.png").shape), 2)
-        self.assertEqual(load_image("./test_grey.png", "rgb").shape[2], 3)
+        if VERBOSE: # Should raise a user warning
+            self.assertEqual(load_image("./test_grey.png", "rgb").shape[2], 3)
         self.assertEqual(len(load_image("./test_grey.png", "unchanged").shape), 2)
 
         # RGB
@@ -594,7 +596,10 @@ class Test_jupyter(unittest.TestCase):
 # TODO add tests, all missing
 from dutils._code.pytorch import *
 class Test_pytorch(unittest.TestCase):
-    pass
+    def test_fold_performance_plot(self):
+        if VERBOSE: # Notice this will open an extra window. This only happends during testing, no idea why.
+            data = _np.array([[1, 2, 3, 4], [2, 1, 4, 5], [3, 2, 5, 1]])
+            fold_performance_plot(data)
 
 
 ########################################################################################################################

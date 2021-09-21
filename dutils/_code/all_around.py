@@ -147,31 +147,3 @@ __all__ = [
     "init_2d_list",
     "ndarray_to_bins"
 ]
-
-
-# TODO refactor, checks and remove underscore. Or maybe just delete it, it seems a bit to specific.
-def _plot_average_uncertainty(data, stds=2):
-    """
-    data: np.array with shape (samples X repetitions)
-    """
-    xs = _np.arange(len(data))
-    std = data.std(1)
-    mean = data.mean(1)
-
-    fig, (ax1, ax2) = _plt.subplots(1, 2, figsize=(15, 5))
-    ax1.set_title("Individual")
-    ax1.plot(data, ".-")
-
-    ax2.set_title("Averaged with uncertainty")
-    ax2.plot(mean, 'o-', color=_colors.color_from_name("blue", "hex"), label='Mean')
-    _plt.sca(ax2)  # <-- makes gca work, super weird but gets the job done
-    _plt.gca().fill_between(xs, mean - stds * std, mean + stds * std, color='lightblue', alpha=0.5,
-                            label=r"$2\sigma$")
-    _plt.plot(xs, [mean.mean()] * len(xs), '--', color=_colors.color_from_name("orange", "hex"),
-              label="Mean of means")
-    ax2.legend()
-    _plt.show()
-
-    return fig
-
-

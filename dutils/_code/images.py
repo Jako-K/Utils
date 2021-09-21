@@ -1,6 +1,7 @@
 # TODO: Add unit tests
 # TODO: Combine
 
+
 import numpy as _np
 from PIL import Image as _Image
 import requests as _requests
@@ -121,13 +122,13 @@ def get_image_from_url(url: str, return_type: str = "cv2"):
     Note that no checks are performed on the `url`
     """
     # Checks
-    _type_check.assert_types([url, return_type], ["str", "str"])
+    _type_check.assert_types([url, return_type], [str, str])
     if return_type not in ["pillow", "cv2"]:
         raise ValueError(f"Expected `return_type` to be in ['pillow', 'cv2'], but received `{return_type}`")
 
     # Download, open and return image
     image = _Image.open(_requests.get(url, stream=True).raw)
-    return image if (return_type == "pillow") else _colors.convert_color(image, "rgb")
+    return image if (return_type == "pillow") else pillow_image_to_ndarray(image)
 
 
 def ndarray_image_to_pillow(image: _np.ndarray, BGR2RGB: bool = True):
