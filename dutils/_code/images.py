@@ -144,7 +144,7 @@ def ndarray_image_to_pillow(image: _np.ndarray, BGR2RGB: bool = True):
 
 def ndarray_resize_image(image: _np.ndarray, resize_factor: float):
     """
-    Resize `image` according to `resize_factor`
+    Resize `image` according to `resize_factor`s
 
     @param image: Image in np.ndarray format
     @param resize_factor: Rescale factor in percentage, `scale_factor` < 0
@@ -161,7 +161,7 @@ def ndarray_resize_image(image: _np.ndarray, resize_factor: float):
     return _cv2.resize(image, (new_width, new_height), interpolation=_cv2.INTER_AREA)
 
 
-def show_image( path: str, resize_factor: float = 1.0):
+def show_image_from_path(path: str, resize_factor: float = 1.0):
     """
     Display a single image from `path` (works in standard python and jupyter environment)
 
@@ -357,7 +357,8 @@ def load_image(path: str, load_type: str = "unchanged"):
     Load an image in np.ndarray format. Support grayscale, RGB, BGR, RGBA and BGRA
 
     @param path: Image path
-    @param load_type: Image format that will be return. Legal values: ['grey', 'gray', 'rgb', 'bgr', 'unchanged']
+    @param load_type: Image format that will be return
+                      Legal values (case insensitive) : ['grey', 'gray', 'rgb', 'bgr', 'unchanged']
     @return: Image at `path` in the format specified by `load_type`
 
     """
@@ -373,7 +374,8 @@ def load_image(path: str, load_type: str = "unchanged"):
                         "bgr": _cv2.IMREAD_COLOR,
                         "unchanged": _cv2.IMREAD_UNCHANGED}
 
-    if load_type.lower() not in legal_load_types:
+    load_type = load_type.lower()
+    if load_type not in legal_load_types:
         raise ValueError(f"Expected `load_type` to be in `{list(legal_load_types.keys())}`,"
                          f"but received `{load_type}`")
 
@@ -437,7 +439,7 @@ class Cv2Webcam:
             ...
             Do some cool stuff with the captured frame which can be accessed through `self.frame`
             ...
-            return altered_frame_for_display
+            return modified_frame_for_display
 
     new_cam = Cam()
     new_cam.start()
@@ -545,12 +547,51 @@ def show_hist(image:_np.ndarray):
 
     for i in range(channels):
         ax = axes[i] if image.shape[2] > 1 else axes
-        ax.hist(_np.ndarray.flatten(image[:,:,i]), color=colors[i], bins=255)
+        ax.hist(_np.ndarray.flatten(image[:,:,i]), bins=255, color=colors[i], edgecolor=colors[i])
         ax.set_title(titles[i] + " Color Channel")
         ax.set_ylabel("Pixel count")
+        ax.set_xlim(0, 255)
     ax.set_xlabel("Pixel value")
 
+
     _plt.show()
+
+
+def histogram_stretching(image:_np.ndarray, min_vd:int=0, max_vd:int=255):
+
+    # Checks
+    _type_check.assert_types([image, min_vd, max_vd], [_np.ndarray, int, int])
+    assert_ndarray_image(image)
+
+    min_v, max_v = _np.min(image), _np.max(image)
+    if min_v == 0:
+        _warnings.warn("The minimum pixel value of `image` is 0 which may be problematic for histogram stretching"
+                       "in the darker areas of the image")
+    if max_v == 255:
+        _warnings.warn("The maximum pixel value of `image` is 255 which may be problematic for histogram stretching"
+                       "in the brighter areas of the image")
+
+    scaling_coef = (max_vd - min_vd) / (max_v- min_v)
+    stretched_image = scaling_coef * (image-min_v) + min_vd
+
+    if (image == stretched_image).all():
+        _warnings.warn("The input `image` and the histogram stretched version of `image` are identical i.e. no"
+                       "transformation has taken place for whatever reason")
+
+    return stretched_image
+
+
+def gamma_correction(image:_np.ndarray, gamma: float = 1.5):
+    """
+    Perform gamma correction.
+
+    @param image: image in np.ndarray format
+    @param gamma: Essentially adjusting the brightness.
+                  gamma < 1.0 -> brighter and gamma > 1.0 -> darker
+    """
+    table = [((i / 255.0) ** gamma) * 255 for i in _np.arange(0, 256)]
+    table_right_format = _np.array(table).astype("uint8")
+    return _cv2.LUT(image, table_right_format)
 
 
 __all__ = [
@@ -561,7 +602,7 @@ __all__ = [
     "get_image_from_url",
     "ndarray_image_to_pillow",
     "ndarray_resize_image",
-    "show_image",
+    "show_image_from_path",
     "show_ndarray_image",
     "ndarray_image_center",
     "cv2_cutout_square",
@@ -574,4 +615,6 @@ __all__ = [
     "ndarray_bgr2rgb",
     "ndarray_rgb2bgr",
     "show_hist",
+    "histogram_stretching",
+    "gamma_correction",
 ]

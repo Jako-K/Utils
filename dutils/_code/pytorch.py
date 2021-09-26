@@ -94,7 +94,7 @@ class _Templates:
 
     @staticmethod
     def _print(string):
-        [print(line[8:]) for line in string.split("\n")]  # Remove the first 8 spaces from print
+        [print(line[12:]) for line in string.split("\n")]  # Remove the first 8 spaces from print
 
 
     def scheduler_plotter(self):
@@ -348,7 +348,7 @@ def seed_torch(seed: int = 12, deterministic: bool = False):
     _torch.cuda.manual_seed(seed)
 
 
-def show_tensor_image(image_tensor: _torch.Tensor, rows: int = 1, cols: int = 1, fig_size: _matplotlib.figure.Figure = (15, 10)):
+def show_tensor_image(image_tensor: _torch.Tensor, rows: int = 1, cols: int = 1, fig_size:tuple = (15, 10)):
     """
     Function description:
     Can show multiple tensor images.
@@ -360,7 +360,7 @@ def show_tensor_image(image_tensor: _torch.Tensor, rows: int = 1, cols: int = 1,
     """
     # Checks
     _type_check.assert_types([image_tensor, rows, cols, fig_size],
-                             [_torch.Tensor, int, int, _matplotlib.figure.Figure])
+                             [_torch.Tensor, int, int, tuple])
     if (rows < 1) or (cols < 1):
         raise ValueError("Both `rows` and `cols` must be greater than or equal to 1")
     if rows * cols > image_tensor.shape[0]:

@@ -6,9 +6,12 @@ Stuff that hasen't been tested yet or that I'm on the fence about
 import pydicom as _dicom
 import matplotlib.pylab as _plt
 import numpy as _np
+import warnings as _warnings
 
 from . import colors as _colors
 from . import input_output as _input_output
+from . import type_check as _type_check
+from . import images as _images
 
 
 def show_dicom(path:str):
@@ -39,31 +42,7 @@ def load_unspecified(path:str):
     raise NotImplementedError("")
 
 
-def plot_average_uncertainty(data, stds=2):
-    """
-    data: np.array with shape (samples X repetitions)
-    """
-    xs = _np.arange(len(data))
-    std = data.std(1)
-    mean = data.mean(1)
-
-    fig, (ax1, ax2) = _plt.subplots(1, 2, figsize=(15, 5))
-    ax1.set_title("Individual")
-    ax1.plot(data, ".-")
-
-    ax2.set_title("Averaged with uncertainty")
-    ax2.plot(mean, 'o-', label='Mean')
-    _plt.sca(ax2)  # <-- makes gca work, super wierd but gets the job done
-    _plt.gca().fill_between(xs, mean - stds * std, mean + stds * std, color='lightblue', alpha=0.5, label=r"$2\sigma$")
-    _plt.plot(xs, [mean.mean()] * len(xs), '--', color=_colors.seaborn_orange, label="Mean of means")
-    ax2.legend()
-    _plt.show()
-
-    return fig
-
-
 __all__ = [
     "show_dicom",
     "load_unspecified",
-    "plot_average_uncertainty",
 ]

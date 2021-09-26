@@ -347,6 +347,22 @@ class Test_images(unittest.TestCase):
             show_hist(image)
 
 
+    def test_histogram_stretching(self):
+        if VERBOSE:
+            img = load_image("./dragon.jpg", "grey")
+            img_new = histogram_stretching(img).astype(_np.uint8)
+
+            show_hist(img)
+            show_hist(img_new)
+            show_ndarray_image(img)
+            show_ndarray_image(img_new)
+
+
+    def test_gamma_correction(self):
+        if VERBOSE:
+            img = load_image("./dragon.jpg", "grey")
+            show_ndarray_image(gamma_correction(img, 3.0))
+
 ########################################################################################################################
 ##########################################             imports                ##########################################
 ########################################################################################################################

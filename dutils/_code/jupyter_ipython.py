@@ -1,4 +1,5 @@
 import IPython as _IPython
+import cv2
 import matplotlib.pyplot as _plt
 from PIL import Image as _Image
 import numpy as _np
@@ -32,8 +33,12 @@ def assert_in_jupyter():
 
 
 def adjust_screen_width(percentage:int=75):
-    """ `percentage` determines how much of the browser's width is used by Jupyter notebook """
+    """
+    Adjust the cell width of Jupyter notebook. 100 % is the entire browser window.
 
+    @param percentage: Percentage cells are scaled by (min: 50, max: 100)
+    @return: None
+    """
     # Checks
     _type_check.assert_type(percentage, int)
     assert_in_jupyter()
@@ -46,8 +51,16 @@ def adjust_screen_width(percentage:int=75):
 
 
 def play_audio(path:str, plot:bool=True):
-    """ Load a sound and display it if `plot` is True. Use torchaudio, so only support what they do."""
-    import torchaudio as _torchaudio # Move this to other imports, when the "sox warning shenanigans" has been fixed
+    """
+    Load sound from `path` and display it if `plot` is True.
+    NOTE: Uses torchaudio as backend, and therefore only supports what they do.
+
+    @param path: Path where sound can be found
+    @param plot: Determine if the raw waveform is plotted alongside the playable audio
+    @return: None
+    """
+
+    import torchaudio as _torchaudio # TODO Move this together with the other imports, when the "sox warning shenanigans" has been fixed
 
     #Tests
     assert_in_jupyter()
@@ -68,7 +81,6 @@ def play_audio(path:str, plot:bool=True):
 # TODO add unit test
 def show_image(source, resize_factor:float=1.0, BGR2RGB:bool=None):
     """
-    Function description:
     Display a single image from path, np.ndarray or url.
 
     @param source: path, np.ndarray or url pointing to the image you wish to display
@@ -87,9 +99,9 @@ def show_image(source, resize_factor:float=1.0, BGR2RGB:bool=None):
     is_ndarray = True if isinstance(source, _np.ndarray) else False
 
     if not (is_path or is_url or is_ndarray):
-        raise ValueError("`source` could not be intepreted as a path, url or ndarray.")
+        raise ValueError("`source` could not be interpreted as a path, url or ndarray.")
     if is_path + is_url + is_ndarray > 1:
-        raise AssertionError("This should not be possible") # Don't see how a path and an url can be valid simultaneously
+        raise AssertionError("This should not be possible") # Don't see how a path and a url can be valid simultaneously
     if resize_factor < 0:
         ValueError(f"`resize_factor` > 0, received value of {resize_factor}")
 
@@ -100,10 +112,15 @@ def show_image(source, resize_factor:float=1.0, BGR2RGB:bool=None):
     elif is_ndarray:
         image = _Image.fromarray(source)
 
-    bgr2rgb_auto = BGR2RGB is None and is_ndarray
+    # Swap blue and red color channel stuff
+    num_channels = len(image.getbands())
+    bgr2rgb_auto = (BGR2RGB is None) and is_ndarray and (num_channels in [3, 4])
     if BGR2RGB or bgr2rgb_auto:
-        # BGR --> RGB (done in numpy, just because it's the easiest)
-        image = _Image.fromarray(_np.asarray(image)[:, :, ::-1])
+        # BGR --> RGB or BGRA --> RGBA
+        as_array = _np.asarray(image)
+        color_corrected = cv2.cvtColor(as_array, cv2.COLOR_BGR2RGB) if (num_channels == 3) \
+                          else cv2.cvtColor(as_array, cv2.COLOR_BGRA2RGBA)
+        image = _Image.fromarray(color_corrected)
 
     if resize_factor != 1.0:
         width = int(image.size[0] * resize_factor)
@@ -111,8 +128,6 @@ def show_image(source, resize_factor:float=1.0, BGR2RGB:bool=None):
         image = image.resize((width, height), resample=0, box=None)
 
     display(image)
-
-
 
 
 __all__=[

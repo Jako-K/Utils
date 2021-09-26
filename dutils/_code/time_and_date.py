@@ -11,8 +11,7 @@ from . import type_check as _type_check
 
 class StopWatch:
     """
-    Function description:
-    Keep track of time, much like a stop watch.
+    Keep track of time much like a stop watch does.
 
     Example:
     >> timer = StopWatch()
@@ -187,5 +186,3 @@ __all__ = [
     "month_names_abb"
 ]
 
-
-StopWatch(time_unit = "hours", start_on_create= False, precision_decimals = 3)

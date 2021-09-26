@@ -43,7 +43,7 @@ def get_imports(all_requests:list=None):
     f"""
     # All around
     import matplotlib.pyplot as plt
-    import seaborn as sns; sns.set_style("darkgrid")
+    import seaborn as sns; sns.set_style("whitegrid")
     {"from tqdm.notebook import tqdm" if _jupyter.in_jupyter() else "from tqdm import tqdm"}
     import pandas as pd; pd.options.mode.chained_assignment = None # Avoid errors
     import numpy as np
