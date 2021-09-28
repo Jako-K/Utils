@@ -3,6 +3,5 @@
 **/.pytest_cache
 **/__pycache__
 **/venv
-**/testing.ipynb
-**/testing_new_stuff.ipynb
+testing
 **/.pytest_cache

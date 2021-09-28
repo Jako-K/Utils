@@ -190,7 +190,7 @@ class _Templates:
     
             stats = pd.DataFrame(np.zeros((C.epochs,3)), columns=["train_loss", "valid_loss", "learning_rate"])
             best_model_name = "0_EPOCH.pth"
-            print(H.get_gpu_memory_info())
+            print(U.system_info.get_gpu_info())
     
             ###################################################################################################
             #                                          Training                                               #
@@ -272,13 +272,18 @@ class _Templates:
         self._print(string)
 
 
-    def config_file(self):
-        string = \
+    def config_file(self, on_kaggle=False):
+        login = \
             """
+                from kaggle_secrets import UserSecretsClient
+                wandb.login(key=UserSecretsClient().get_secret("wandb_api_key"))
+            """ if on_kaggle else wandb.login()
+        string = \
+            f"""
             class Config:
                 # Control
                 mode = "train"
-                debug = False
+                debug = True
                 use_wandb = False
                 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     
@@ -301,9 +306,9 @@ class _Templates:
                 scheduler = torch.optim.lr_scheduler.LambdaLR
     
                 # Seed everything
-                seed = 12
-                T.seed_torch(seed)
-    
+                U.pytorch.seed_torch(seed = 12, deterministic = False)
+                
+                # W&B logging
                 to_log = dict(
                     seed = seed,
                     mode = mode,
@@ -321,14 +326,14 @@ class _Templates:
     
             C = Config()
             if C.use_wandb:
-                wandb.login()
+                {login}
                 wandb.init(project=?, config=C.to_log)
     
             """
         self._print(string)
 templates = _Templates()
 
-def seed_torch(seed: int = 12, deterministic: bool = False):
+def seed_torch(seed:int, deterministic:bool = False):
     """
     Function description:
     Seed python, random, os, bumpy, torch and torch.cuda.

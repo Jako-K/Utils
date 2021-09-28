@@ -160,4 +160,3 @@ __all__ = [
     "assert_in",
     "assert_comparison_number"
 ]
-

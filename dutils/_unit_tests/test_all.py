@@ -1,38 +1,23 @@
-import sys as _sys
-import os
-import pathlib
-
-# Adds path of dutils. It's just easier this way, don't worry about it
-test_folder_path = os.path.abspath(__file__[:-11])
-dutils_path = pathlib.Path(test_folder_path).parent.absolute()
-
-# My folder structure is different then that of the pip installed one
-if "dutils" in str(dutils_path):
-    dutils_path = dutils_path.parent.absolute()
-
-_sys.path.append(str(dutils_path))
-
-
 # If True, tests things which are kinda annoying: plots (manually close), prints etc.
-VERBOSE = True
+VERBOSE = False
 
-import pandas as _pd
-import numpy as _np
-import os as _os
-from glob import glob as _glob
-import types as _types
-import cv2 as _cv2
+import pandas as pd
+import numpy as np
+import os as os
+from glob import glob as glob
+import types as types
+import cv2 as cv2
 import unittest
 
 
-from dutils._code import input_output
+from dutils import input_output
 
 # Print total line count
 test_count = input_output.get_line_count_file(
     "./test_all.py", exclude_empty_lines=True)
 
 code_count, _ = input_output.get_line_counts_folder(
-    "../_code", only_extension=".py", exclude_empty_lines=True)
+    "../", only_extension=".py", exclude_empty_lines=True)
 print("\n" * 2 + "-" * 70)
 print("Line counts:")
 print(f"- Tests: {test_count}\n"
@@ -44,12 +29,12 @@ print(f"- Tests: {test_count}\n"
 ########################################################################################################################
 
 
-from dutils._code.all_around import *
+from dutils.all_around import *
 class Test_all_around(unittest.TestCase):
 
     def test_assert_path(self):
         with self.assertRaises(TypeError): pandas_standardize_df("not a dataframe")
-        norm_df = pandas_standardize_df(_pd.DataFrame(_np.array([1, 2, 3, 4])))
+        norm_df = pandas_standardize_df(pd.DataFrame(np.array([1, 2, 3, 4])))
         self.assertEqual(str(norm_df), """          0\n0 -1.161895\n1 -0.387298\n2  0.387298\n3  1.161895""")
 
 
@@ -89,9 +74,9 @@ class Test_all_around(unittest.TestCase):
 
     def test_ndarray_to_bins(self):
         with self.assertRaises(TypeError): ndarray_to_bins("not array", 2)
-        with self.assertRaises(ValueError): ndarray_to_bins(_np.array([1, 2, 3, 4]), 0)
+        with self.assertRaises(ValueError): ndarray_to_bins(np.array([1, 2, 3, 4]), 0)
 
-        array, bins, thresh = ndarray_to_bins(_np.array([1, 2, 3, 4]), 2)
+        array, bins, thresh = ndarray_to_bins(np.array([1, 2, 3, 4]), 2)
         self.assertEqual( list(array), [1, 1, 2, 3] )
         self.assertEqual( bins, 2)
         self.assertEqual( list(thresh), [1. , 2.5, 4. ])
@@ -102,7 +87,7 @@ class Test_all_around(unittest.TestCase):
 ########################################################################################################################
 
 
-from dutils._code.colors import *
+from dutils.colors import *
 class Test_colors(unittest.TestCase):
 
     def test_is_legal_hex(self):
@@ -166,7 +151,7 @@ class Test_colors(unittest.TestCase):
         with self.assertRaises(TypeError): convert_color("#ffffff_", "rgb")
         with self.assertRaises(TypeError): convert_color("asd", "rgb")
         with self.assertRaises(TypeError): convert_color([1,2,3,4], "rgb")
-        with self.assertRaises(TypeError): convert_color(_np.array([1, 2, 3]), "hex")
+        with self.assertRaises(TypeError): convert_color(np.array([1, 2, 3]), "hex")
         with self.assertRaises(TypeError): convert_color([1,2,3.0], "hex")
         with self.assertRaises(TypeError): convert_color([1,2,3,5], "hex")
 
@@ -205,19 +190,6 @@ class Test_colors(unittest.TestCase):
         self.assertEqual(_rgb_to_hex((255, 255, 255)), "#ffffff")
 
 
-    def test_get_color(self):
-
-        with self.assertRaises(TypeError): get_color( (0, 0, 0))
-        with self.assertRaises(TypeError): get_color("blue", None)
-        with self.assertRaises(ValueError): get_color("blue", "not_a_valid_type", "seaborn")
-        with self.assertRaises(ValueError): get_color("blue", "rgb", "not_seaborn")
-
-        for scheme, scheme_colors in _scheme_name_to_colors.items():
-            for color in scheme_colors:
-                for color_type in _legal_types:
-                    color_from_name(color, color_type, scheme)
-
-
     def test_display_colors(self):
         with self.assertRaises(TypeError): display_colors("asd")
         with self.assertRaises(TypeError): display_colors(["asd"])
@@ -245,6 +217,11 @@ class Test_colors(unittest.TestCase):
         with self.assertRaises(ValueError): get_colors(["bluee"])
         with self.assertRaises(ValueError): get_colors(["blue", "green"], color_type="asd", detailed=True)
 
+        with self.assertRaises(TypeError): get_color( (0, 0, 0))
+        with self.assertRaises(TypeError): get_color("blue", None)
+        with self.assertRaises(ValueError): get_color("blue", "not_a_valid_type", "seaborn")
+        with self.assertRaises(ValueError): get_color("blue", "rgb", "not_seaborn")
+
         self.assertEqual(get_colors(["blue"]), [(31, 119, 180)])
         self.assertEqual(get_colors(["blue", "green"]), [(31, 119, 180), (44, 160, 44)])
         self.assertEqual(get_colors(["blue", "green"], color_type="hex"), ['#1f77b4', '#2ca02c'])
@@ -255,7 +232,7 @@ class Test_colors(unittest.TestCase):
 ########################################################################################################################
 
 
-from dutils._code.formatting import *
+from dutils.formatting import *
 class Test_formatting(unittest.TestCase):
 
     def test_scientific_notation(self):
@@ -284,7 +261,7 @@ class Test_formatting(unittest.TestCase):
 
 
 #TODO add tests, all missing (remember to add test_image.png)
-from dutils._code.images import *
+from dutils.images import *
 class Test_images(unittest.TestCase):
 
     def test_load_images(self):
@@ -306,10 +283,10 @@ class Test_images(unittest.TestCase):
 
 
     def test_rotate_images(self):
-        img = _cv2.imread("./dragon.jpg")
-        self.assertEqual(_cv2.rotate(img, cv2_rotate_map[90]).shape, (606, 465, 3))
-        self.assertEqual(_cv2.rotate(img, cv2_rotate_map[180]).shape, (465, 606, 3))
-        self.assertEqual(_cv2.rotate(img, cv2_rotate_map[270]).shape, (606, 465, 3))
+        img = cv2.imread("./dragon.jpg")
+        self.assertEqual(cv2.rotate(img, cv2_rotate_map[90]).shape, (606, 465, 3))
+        self.assertEqual(cv2.rotate(img, cv2_rotate_map[180]).shape, (465, 606, 3))
+        self.assertEqual(cv2.rotate(img, cv2_rotate_map[270]).shape, (606, 465, 3))
 
 
     def test_assert_ndarray_image(self):
@@ -332,8 +309,8 @@ class Test_images(unittest.TestCase):
 
         with self.assertRaises(ValueError): assert_ndarray_image(grey, "asd")
         with self.assertRaises(ValueError): assert_ndarray_image(grey.flatten())
-        with self.assertRaises(ValueError): assert_ndarray_image(_np.array([[123, 23], [14, -12]]), "gray")
-        with self.assertRaises(TypeError): assert_ndarray_image(_np.array([[123, 123], [12124, 12]]), "gray")
+        with self.assertRaises(ValueError): assert_ndarray_image(np.array([[123, 23], [14, -12]]), "gray")
+        with self.assertRaises(TypeError): assert_ndarray_image(np.array([[123, 123], [12124, 12]]), "gray")
         with self.assertRaises(TypeError): assert_ndarray_image(color / 255., "grey")
         with self.assertRaises(ValueError): assert_ndarray_image(color, "grey")
         with self.assertRaises(ValueError): assert_ndarray_image(grey, "color")
@@ -350,7 +327,7 @@ class Test_images(unittest.TestCase):
     def test_histogram_stretching(self):
         if VERBOSE:
             img = load_image("./dragon.jpg", "grey")
-            img_new = histogram_stretching(img).astype(_np.uint8)
+            img_new = histogram_stretching(img).astype(np.uint8)
 
             show_hist(img)
             show_hist(img_new)
@@ -368,8 +345,8 @@ class Test_images(unittest.TestCase):
 ########################################################################################################################
 
 
-from dutils._code.imports import *
-from dutils._code import imports
+from dutils.imports import *
+from dutils import imports
 class Test_imports(unittest.TestCase):
     def test_get_imports(self):
         with self.assertRaises(TypeError): get_imports("not a list")
@@ -378,7 +355,7 @@ class Test_imports(unittest.TestCase):
 
     def test_get_module_path(self):
         with self.assertRaises(TypeError): get_imports("not a Module")
-        self.assertEqual(_os.path.abspath("../_code/imports.py"), get_module_path(imports))
+        self.assertEqual(os.path.abspath("../imports.py"), get_module_path(imports))
 
 
     def test_get_available_functions(self):
@@ -396,24 +373,24 @@ class Test_imports(unittest.TestCase):
 ########################################################################################################################
 
 # TODO add get_file_extension
-from dutils._code.input_output import *
+from dutils.input_output import *
 class Test_input_output(unittest.TestCase):
 
     def test_assert_path(self):
         with self.assertRaises(TypeError): assert_path(123)
         with self.assertRaises(ValueError): assert_path("./something_lalalaalala.txt.png")
-        assert_path("../_code/input_output.py")
+        assert_path("../input_output.py")
 
 
     def test_assert_path_dont_exists(self):
         with self.assertRaises(TypeError): assert_path_dont_exists(123)
-        with self.assertRaises(ValueError): assert_path_dont_exists("../_code/input_output.py")
+        with self.assertRaises(ValueError): assert_path_dont_exists("../input_output.py")
         assert_path_dont_exists("./something_lalalaalala.txt.png")
 
 
     def test_path_exists(self):
         with self.assertRaises(TypeError): path_exists(123)
-        self.assertEqual(path_exists("../_code/input_output.py"), True)
+        self.assertEqual(path_exists("../input_output.py"), True)
         self.assertEqual(path_exists("something_lalalaalala.txt.png"), False)
 
 
@@ -426,7 +403,7 @@ class Test_input_output(unittest.TestCase):
     def test_get_current_directory(self):
         self.assertEqual(type(get_current_directory()), str)
         # Check if "input_output.py" is somewhere within the current folder
-        paths = _glob(_os.path.join("../_code", "*"))
+        paths = glob(os.path.join("../", "*"))
         self.assertEqual(sum([path.find("input_output.py") != -1 for path in paths]) != 0, True)
 
 
@@ -439,7 +416,7 @@ class Test_input_output(unittest.TestCase):
         # Test function work
         save_plt_plot("./test_plt.png")
         assert_path("./test_plt.png")
-        _os.remove("./test_plt.png")
+        os.remove("./test_plt.png")
 
 
     def test_get_file_basename(self):
@@ -462,7 +439,7 @@ class Test_input_output(unittest.TestCase):
         write_to_file("./test.txt", "hello_world 123")
         with open("./test.txt", "r") as F:
             self.assertEqual(F.read(), "hello_world 123")
-        _os.remove("./test.txt")
+        os.remove("./test.txt")
 
 
     def test_read_json(self):
@@ -474,7 +451,7 @@ class Test_input_output(unittest.TestCase):
         write_to_file("./test.json", '{"hello_world": []}')
         with open("./test.json", "r") as F:
             self.assertEqual(F.read(), '{"hello_world": []}')
-        _os.remove("./test.json")
+        os.remove("./test.json")
 
 
     def test_get_number_of_files(self):
@@ -483,13 +460,13 @@ class Test_input_output(unittest.TestCase):
 
         # Create folder with 3 files, check number and delete all again.
         assert_path_dont_exists("./testdir")
-        _os.mkdir("./testdir")
+        os.mkdir("./testdir")
         for i in range(3):
             with open(f"./testdir/t{i}.txt", "w") as f:
                 f.close()
         self.assertEqual(get_number_of_files("./testdir"), 3)
-        [_os.remove(f"./testdir/t{i}.txt") for i in range(3)]
-        _os.rmdir("./testdir")
+        [os.remove(f"./testdir/t{i}.txt") for i in range(3)]
+        os.rmdir("./testdir")
 
 
     def test_read_txt_file(self):
@@ -499,7 +476,7 @@ class Test_input_output(unittest.TestCase):
         with open("./test.txt", "w") as f: f.close()
         write_to_file("./test.txt", "hello_world 123")
         self.assertEqual(read_file("./test.txt"), "hello_world 123")
-        _os.remove("./test.txt")
+        os.remove("./test.txt")
 
 
     def test_save_and_load_pickle(self):
@@ -511,11 +488,11 @@ class Test_input_output(unittest.TestCase):
 
         save_as_pickle([1,2,3], "test.pkl", "./")
         self.assertEqual( load_pickle_file("./test.pkl"), [1,2,3])
-        _os.remove("./test.pkl")
+        os.remove("./test.pkl")
 
 
     def test_copy_folder(self):
-        _os.mkdir("./testdir")
+        os.mkdir("./testdir")
         with self.assertRaises(TypeError): copy_folder(123, "./testdir")
         with self.assertRaises(TypeError): copy_folder("./testdir", 123)
         with self.assertRaises(ValueError): copy_folder("./testdir", "./testdir")
@@ -523,8 +500,8 @@ class Test_input_output(unittest.TestCase):
         copy_folder("./testdir", "./testdir1")
         assert_path("./testdir1")
 
-        _os.rmdir("./testdir")
-        _os.rmdir("./testdir1")
+        os.rmdir("./testdir")
+        os.rmdir("./testdir1")
 
 
     def test_is_folder(self):
@@ -589,7 +566,7 @@ class Test_input_output(unittest.TestCase):
 ########################################################################################################################
 
 
-from dutils._code.jupyter_ipython import *
+from dutils.jupyter_ipython import *
 class Test_jupyter(unittest.TestCase):
     def test_all(self):
         # I don't really know how to test these properly, since I cannot guarantee to be in a jupyter env.
@@ -610,11 +587,11 @@ class Test_jupyter(unittest.TestCase):
 
 
 # TODO add tests, all missing
-from dutils._code.pytorch import *
+from dutils.pytorch import *
 class Test_pytorch(unittest.TestCase):
     def test_fold_performance_plot(self):
         if VERBOSE: # Notice this will open an extra window. This only happends during testing, no idea why.
-            data = _np.array([[1, 2, 3, 4], [2, 1, 4, 5], [3, 2, 5, 1]])
+            data = np.array([[1, 2, 3, 4], [2, 1, 4, 5], [3, 2, 5, 1]])
             fold_performance_plot(data)
 
 
@@ -623,7 +600,7 @@ class Test_pytorch(unittest.TestCase):
 ########################################################################################################################
 
 
-from dutils._code.system_info import *
+from dutils.system_info import *
 class Test_system_info(unittest.TestCase):
 
     def test_get_vram_info(self):
@@ -672,7 +649,7 @@ class Test_system_info(unittest.TestCase):
 ########################################################################################################################
 
 
-from dutils._code.time_and_date import *
+from dutils.time_and_date import *
 class UnitTests(unittest.TestCase):
 
     def test_stop_watch(self):
@@ -726,7 +703,7 @@ class UnitTests(unittest.TestCase):
 ######################################             type_check                ###########################################
 ########################################################################################################################
 
-from dutils._code.type_check import *
+from dutils.type_check import *
 class Unit_type_check(unittest.TestCase):
 
     def test_assert_type(self):
@@ -756,7 +733,7 @@ class Unit_type_check(unittest.TestCase):
         assert_types(to_check=[22, "string", None], expected_types=[int, str, int], allow_nones=[0, 0, 1])
         assert_types(
             to_check=[22, 0.2, None, unittest],
-            expected_types=[int, float, str, _types.ModuleType],
+            expected_types=[int, float, str, types.ModuleType],
             allow_nones=[0, 0, 1, 0]
         )
 

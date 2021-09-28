@@ -1,6 +1,6 @@
 """
 DESCRIPTION:
-A bunch modules with helper functions.
+A bunch of modules with task specific helper functions and alike.
 NOTE: `dutils.search("what_you_want_to_search_for")` can help you find what you're looking for
 
 EXAMPLE:
@@ -12,28 +12,28 @@ EXAMPLE:
 #_______________________________________________________________________________________________________________________
 # *  The whole "underscore in front of modules" shenanigans I've used in most of the modules is only there to prevent
 #    namespace pollution e.g. `dutils.images.np` is avoided this way and `np` will therefore not be visible to the user
+#    This is, admittedly, not a pretty solution, but I feel like one should be able to use autocomplete to quickly
+#    see which functionality is avaliable. And this would be pretty darn hard if you had to scroll through 10 non-relavent 
+#    import such as np, os, sys etc.
 #_______________________________________________________________________________________________________________________
 
 
-# Import main modules
+# Import modules
 _all_modules_str = ["all_around", "colors", "experimental", "formatting", "images", "imports", "input_output",
                     "jupyter_ipython", "pytorch", "system_info", "time_and_date", "type_check", "country_converter"]
 
-# This is admittedly not a pretty solution, but believe or not, this was the only way i could get dynamic imports
-# and a search function working without all sorts of shenanigans. Just move on, don't worry about it :)
+
+# Import all the modules correctly and exposes everything callable to the search function.
 all_searchable = []
 for module in _all_modules_str:
-    exec(f"from ._code import {module}")
-    exec(f"module_all = {module}.__all__") # Every module in `_code` has everything which should be visible in `__all__`
+    exec(f"from . import {module}")
+    exec(f"module_all = {module}.__all__") # Every module in `.` has everything which should be visible in `__all__`
     exec("all_searchable += [f'{module}.{s}' for s in module_all]")
 
-import os as _os
-_code_path = _os.path.abspath(__file__)[:-11]
 
 def search(name:str):
     """
-    DESCRIPTION:
-    Search `utils` for everything importable which contains `name`.
+    Search `dutils` for everything importable which contains `name`.
     NOTE: The function is case insensitive e.g. 'RGB' and 'rgb' are interpreted the same
     """
     if not isinstance(name, str):
@@ -43,7 +43,8 @@ def search(name:str):
     return sorted(matching_results)
 
 #________________________________________________________________________________________________________________
-# TODO, notes and ideas:
+# TODO:
+
 # 1.) Fix system info print, when not nvidia and remove pytorch cuda dependencies.
 # 2.) Find a way to check that __all__ contains everything
 # 3.) Check if there's a raise in front of all errors 
@@ -51,6 +52,14 @@ def search(name:str):
 #     This would alleviate much of the import shenanigans
 # 5.) After the folder structure has been fixed, remove "_names" from __all__ e.g. "colors._assert_color_scheme"
 #     which is only there for testing purposes
+# 6.) pytorch: 
+#        * Save and load model.
+#        * Add "on_kaggle" option to U.pytorch.templates.config_file, such that it uses Kaggle's secrets to log in to WB
+# 
+
+
+
+# NOTES AND IDEAS:
 
 # Integrate pandas_profiling in some way, perhaps just a "print what you're supposed to do" kinda thing
 # Make pandas print helper: "df.describe(), df.info() ..." just a bunch of different pandas commands in one place
