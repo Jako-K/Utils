@@ -164,7 +164,7 @@ def save_as_pickle(obj:object, file_name:str, save_path:str=None):
     """
     _type_check.assert_types([file_name, save_path], [str, str], [0, 1])
     if get_file_extension(file_name).find(".pkl") == -1:
-        ValueError("Expected .pkl file extension, but received something else")
+        raise ValueError("Expected .pkl file extension, but received something else")
 
     # Path
     if save_path is None:
@@ -182,7 +182,7 @@ def load_pickle_file(path:str):
     """ Load pickle-object and return as is """
     assert_path(path)
     if get_file_extension(path).find(".pkl") == -1:
-        ValueError("Expected .pkl file extension, but received something else")
+        raise ValueError("Expected .pkl file extension, but received something else")
 
     with open(path, 'rb') as pickle_file:
         return _pickle.load(pickle_file)

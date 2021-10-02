@@ -20,28 +20,28 @@ import matplotlib.pyplot as _plt
 from . import type_check as _type_check
 
 # Seaborn color scheme
-seaborn_blue = (31, 119, 180)
-seaborn_orange = (255, 127, 14)
-seaborn_green = (44, 160, 44)
-seaborn_red = (214, 39, 40)
-seaborn_purple = (148, 103, 189)
-seaborn_brown = (140, 86, 75)
-seaborn_pink = (227, 119, 194)
-seaborn_grey = (127, 127, 127)
-seaborn_white = (225, 255, 255)
-seaborn_colors = {"blue": seaborn_blue,
-                  "orange": seaborn_orange,
-                  "green": seaborn_green,
-                  "red": seaborn_red,
-                  "purple": seaborn_purple,
-                  "brown": seaborn_brown,
-                  "pink": seaborn_pink,
-                  "grey": seaborn_grey,
-                  "white": seaborn_white}
+_seaborn_blue = (31, 119, 180)
+_seaborn_orange = (255, 127, 14)
+_seaborn_green = (44, 160, 44)
+_seaborn_red = (214, 39, 40)
+_seaborn_purple = (148, 103, 189)
+_seaborn_brown = (140, 86, 75)
+_seaborn_pink = (227, 119, 194)
+_seaborn_grey = (127, 127, 127)
+_seaborn_white = (225, 255, 255)
+_seaborn_colors = {"blue": _seaborn_blue,
+                  "orange": _seaborn_orange,
+                  "green": _seaborn_green,
+                  "red": _seaborn_red,
+                  "purple": _seaborn_purple,
+                  "brown": _seaborn_brown,
+                  "pink": _seaborn_pink,
+                  "grey": _seaborn_grey,
+                  "white": _seaborn_white}
 
 
 _legal_types = ["rgb", "rgb_01", "hex"]
-_scheme_name_to_colors = {"seaborn": seaborn_colors}
+_scheme_name_to_colors = {"seaborn": _seaborn_colors}
 _colors_schemes = list(_scheme_name_to_colors.keys())
 
 
@@ -290,21 +290,15 @@ def get_colors(colors: list, color_scheme="seaborn", color_type="rgb", detailed:
 
 
 __all__ = [
-    "_legal_types",
-    "_scheme_name_to_colors",
     "is_legal_hex",
     "is_legal_rgb",
     "get_color_type",
-    "_assert_type_str",
     "assert_color",
-    "_assert_color_scheme",
-    "_assert_color_word",
     "convert_color",
     "random_color",
-    "_hex_to_rgb",
-    "_rgb_to_hex",
     "get_color",
     "display_colors",
     "get_color_scheme",
     "get_colors",
+    "is_legal_rgb_01",
 ]

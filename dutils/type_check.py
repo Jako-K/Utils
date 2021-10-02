@@ -11,7 +11,6 @@ NoneType = type(None)
 
 
 # General
-
 def assert_type(to_check, expected_type, allow_none:bool=False):
     """
     Function description:
@@ -158,5 +157,7 @@ __all__ = [
     "assert_types",
     "assert_list_slow",
     "assert_in",
-    "assert_comparison_number"
+    "assert_comparison_number",
+    "NoneType",
+    "ModuleType",
 ]

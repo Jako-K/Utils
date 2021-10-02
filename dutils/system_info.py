@@ -82,7 +82,6 @@ def get_computer_info():
     print("=" * 100)
 
 
-
 __all__ = [
     "windows_illegal_file_name_character",
     "get_vram_info",

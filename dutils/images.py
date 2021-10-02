@@ -154,7 +154,7 @@ def ndarray_resize_image(image: _np.ndarray, resize_factor: float):
     _type_check.assert_types([image, resize_factor], [_np.ndarray, float])
     assert_ndarray_image(image)
     if resize_factor < 0:
-        ValueError(f"`resize_factor` > 0, received value of {resize_factor}")
+        raise ValueError(f"`resize_factor` > 0, received value of {resize_factor}")
 
     new_width = int(image.shape[1] * resize_factor)
     new_height = int(image.shape[0] * resize_factor)
@@ -174,7 +174,7 @@ def show_image_from_path(path: str, resize_factor: float = 1.0):
     _type_check.assert_types([path, resize_factor], [str, float])
     _input_output.assert_path(path)
     if resize_factor < 0:
-        ValueError(f"`resize_factor` > 0, received value of {resize_factor}")
+        raise ValueError(f"`resize_factor` > 0, received value of {resize_factor}")
 
     # If inside a jupyter environment Pillow is ued to show the image, otherwise cv2.
     if _jupyter.in_jupyter():
@@ -201,7 +201,7 @@ def show_ndarray_image(image: _np.ndarray, resize_factor: float = 1.0, name: str
     _type_check.assert_types([image, resize_factor, name, BGR2RGB], [_np.ndarray, float, str, bool])
     assert_ndarray_image(image)
     if resize_factor < 0:
-        ValueError(f"`resize_factor` > 0, received value of {resize_factor}")
+        raise ValueError(f"`resize_factor` > 0, received value of {resize_factor}")
 
     if BGR2RGB:
         image = _cv2.cvtColor(image, _cv2.COLOR_BGR2RGB)

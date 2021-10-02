@@ -1,5 +1,5 @@
 import IPython as _IPython
-import cv2
+import cv2 as _cv2
 import matplotlib.pyplot as _plt
 from PIL import Image as _Image
 import numpy as _np
@@ -103,7 +103,7 @@ def show_image(source, resize_factor:float=1.0, BGR2RGB:bool=None):
     if is_path + is_url + is_ndarray > 1:
         raise AssertionError("This should not be possible") # Don't see how a path and a url can be valid simultaneously
     if resize_factor < 0:
-        ValueError(f"`resize_factor` > 0, received value of {resize_factor}")
+        raise ValueError(f"`resize_factor` > 0, received value of {resize_factor}")
 
     if is_path:
         image = _Image.open(source)
@@ -118,8 +118,8 @@ def show_image(source, resize_factor:float=1.0, BGR2RGB:bool=None):
     if BGR2RGB or bgr2rgb_auto:
         # BGR --> RGB or BGRA --> RGBA
         as_array = _np.asarray(image)
-        color_corrected = cv2.cvtColor(as_array, cv2.COLOR_BGR2RGB) if (num_channels == 3) \
-                          else cv2.cvtColor(as_array, cv2.COLOR_BGRA2RGBA)
+        color_corrected = _cv2.cvtColor(as_array, _cv2.COLOR_BGR2RGB) if (num_channels == 3) \
+                          else _cv2.cvtColor(as_array, _cv2.COLOR_BGRA2RGBA)
         image = _Image.fromarray(color_corrected)
 
     if resize_factor != 1.0:

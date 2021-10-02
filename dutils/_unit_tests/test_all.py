@@ -1,5 +1,6 @@
 # If True, tests things which are kinda annoying: plots (manually close), prints etc.
-VERBOSE = False
+VERBOSE = True
+
 
 import pandas as pd
 import numpy as np
@@ -8,21 +9,49 @@ from glob import glob as glob
 import types as types
 import cv2 as cv2
 import unittest
-
-
+import matplotlib.pyplot as plt
 from dutils import input_output
+import dutils as U
+
+# Automatic key press to close windows
+AUTO_PRESS = True # Will automatically close windows activated by VERBOSE=True
+from pynput.keyboard import Key, Controller
+keyboard = Controller()
+if AUTO_PRESS:
+    plt.ion() # Makes plt not block other commands, which enable `keyboard` to automatically close windows
+
 
 # Print total line count
-test_count = input_output.get_line_count_file(
-    "./test_all.py", exclude_empty_lines=True)
+print("\n" * 2 + "_" * 70)
+for (boolean, string) in [(False, "without spacing"), (True, "with spacing")]:
+    test_count = input_output.get_line_count_file("./test_all.py", exclude_empty_lines=boolean)
+    code_count, _ = input_output.get_line_counts_folder("../", only_extension=".py", exclude_empty_lines=boolean)
+    print(f"Line counts ({string}):")
+    print(f" - Tests: {test_count}\n"
+          f" -  Code: {code_count}\n"
+          f" - Total: {test_count + code_count}\n")
 
-code_count, _ = input_output.get_line_counts_folder(
-    "../", only_extension=".py", exclude_empty_lines=True)
-print("\n" * 2 + "-" * 70)
-print("Line counts:")
-print(f"- Tests: {test_count}\n"
-      f"-  Code: {code_count}\n"
-      f"- Total: {test_count + code_count}\n")
+
+# Check that every module has correctly filled in its __all__ attribute. This is important cause `dutils.search` use it
+public_modules = [var for var in dir(U) if var[0] != "_" and var != "search"]
+not_accounted_for = []
+
+for module_str in public_modules:
+    module = getattr(U, module_str)
+    in_all = module.__all__
+    public_vars = [var for var in dir(module) if var[0] != "_"]
+
+    for p_var in public_vars:
+        if p_var not in in_all:
+            not_accounted_for.append(module_str + "." + p_var)
+
+if not_accounted_for:
+    print("not accounted for in __all__s:")
+    [print(" - ", var) for var in not_accounted_for]
+else:
+    print("No missing values in any __all__\n\n")
+
+
 
 ########################################################################################################################
 ##########################################             all_around                #######################################
@@ -88,6 +117,8 @@ class Test_all_around(unittest.TestCase):
 
 
 from dutils.colors import *
+from dutils.colors import (_assert_type_str, _assert_color_scheme, _assert_color_word, _hex_to_rgb, _rgb_to_hex,
+                           _legal_types, _scheme_name_to_colors)
 class Test_colors(unittest.TestCase):
 
     def test_is_legal_hex(self):
@@ -196,8 +227,10 @@ class Test_colors(unittest.TestCase):
         with self.assertRaises(TypeError): display_colors(["#fffff_"])
         with self.assertRaises(TypeError): display_colors([(1,2,3,4)])
 
+
         if VERBOSE:
             display_colors(list(_scheme_name_to_colors["seaborn"].values()))
+            if AUTO_PRESS: keyboard.press("q")
 
 
     def test_get_color_scheme(self):
@@ -226,6 +259,7 @@ class Test_colors(unittest.TestCase):
         self.assertEqual(get_colors(["blue", "green"]), [(31, 119, 180), (44, 160, 44)])
         self.assertEqual(get_colors(["blue", "green"], color_type="hex"), ['#1f77b4', '#2ca02c'])
         self.assertEqual(get_colors(["blue", "green"], color_type="hex", detailed=True), {'blue': '#1f77b4', 'green': '#2ca02c'})
+
 
 ########################################################################################################################
 ##########################################             Formatting                #######################################
@@ -267,8 +301,7 @@ class Test_images(unittest.TestCase):
     def test_load_images(self):
         # Grey
         self.assertEqual(len(load_image("./test_grey.png").shape), 2)
-        if VERBOSE: # Should raise a user warning
-            self.assertEqual(load_image("./test_grey.png", "rgb").shape[2], 3)
+        # self.assertEqual(load_image("./test_grey.png", "rgb").shape[2], 3) # <-- Raises user warning
         self.assertEqual(len(load_image("./test_grey.png", "unchanged").shape), 2)
 
         # RGB
@@ -320,8 +353,11 @@ class Test_images(unittest.TestCase):
         if VERBOSE:
             image = load_image("./dragon.jpg", load_type="rgb")
             show_hist(image)
+            if AUTO_PRESS: keyboard.press("q")
+
             image = load_image("./dragon.jpg", load_type="grey")
             show_hist(image)
+            if AUTO_PRESS: keyboard.press("q")
 
 
     def test_histogram_stretching(self):
@@ -330,15 +366,21 @@ class Test_images(unittest.TestCase):
             img_new = histogram_stretching(img).astype(np.uint8)
 
             show_hist(img)
+            if AUTO_PRESS: keyboard.press("q")
             show_hist(img_new)
+            if AUTO_PRESS: keyboard.press("q")
             show_ndarray_image(img)
+            if AUTO_PRESS: keyboard.press("q")
             show_ndarray_image(img_new)
+            if AUTO_PRESS: keyboard.press("q")
 
 
     def test_gamma_correction(self):
         if VERBOSE:
             img = load_image("./dragon.jpg", "grey")
             show_ndarray_image(gamma_correction(img, 3.0))
+            if AUTO_PRESS: keyboard.press("q")
+
 
 ########################################################################################################################
 ##########################################             imports                ##########################################
@@ -371,6 +413,7 @@ class Test_imports(unittest.TestCase):
 ########################################################################################################################
 ##########################################             Input_output                #####################################
 ########################################################################################################################
+
 
 # TODO add get_file_extension
 from dutils.input_output import *
@@ -561,6 +604,7 @@ class Test_input_output(unittest.TestCase):
         remove_file(f"./file_count_test/test.txt")
         os.rmdir("./file_count_test")
 
+
 ########################################################################################################################
 ##########################################             jupyter                ##########################################
 ########################################################################################################################
@@ -590,9 +634,10 @@ class Test_jupyter(unittest.TestCase):
 from dutils.pytorch import *
 class Test_pytorch(unittest.TestCase):
     def test_fold_performance_plot(self):
-        if VERBOSE: # Notice this will open an extra window. This only happends during testing, no idea why.
+        if VERBOSE:
             data = np.array([[1, 2, 3, 4], [2, 1, 4, 5], [3, 2, 5, 1]])
             fold_performance_plot(data)
+            if AUTO_PRESS: keyboard.press("q")
 
 
 ########################################################################################################################
@@ -702,6 +747,7 @@ class UnitTests(unittest.TestCase):
 ########################################################################################################################
 ######################################             type_check                ###########################################
 ########################################################################################################################
+
 
 from dutils.type_check import *
 class Unit_type_check(unittest.TestCase):

@@ -45,7 +45,7 @@ def get_imports(all_requests:list=None):
     import matplotlib.pyplot as plt
     import seaborn as sns; sns.set_style("whitegrid")
     {"from tqdm.notebook import tqdm" if _jupyter.in_jupyter() else "from tqdm import tqdm"}
-    import pandas as pd; pd.options.mode.chained_assignment = None # Avoid errors
+    import pandas as pd
     import numpy as np
     from glob import glob
     import sys

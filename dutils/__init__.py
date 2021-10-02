@@ -12,23 +12,30 @@ EXAMPLE:
 #_______________________________________________________________________________________________________________________
 # *  The whole "underscore in front of modules" shenanigans I've used in most of the modules is only there to prevent
 #    namespace pollution e.g. `dutils.images.np` is avoided this way and `np` will therefore not be visible to the user
-#    This is, admittedly, not a pretty solution, but I feel like one should be able to use autocomplete to quickly
-#    see which functionality is avaliable. And this would be pretty darn hard if you had to scroll through 10 non-relavent 
-#    import such as np, os, sys etc.
+#    This is, admittedly, not a pretty solution, but I feel like you should be able to use autocomplete to quickly
+#    browse which functionality is avaliable. And this would be pretty darn hard if you had to scroll through a bunch
+#    of irrelevant imports such as np, os, sys etc.
 #_______________________________________________________________________________________________________________________
 
 
-# Import modules
-_all_modules_str = ["all_around", "colors", "experimental", "formatting", "images", "imports", "input_output",
-                    "jupyter_ipython", "pytorch", "system_info", "time_and_date", "type_check", "country_converter"]
+from glob import glob as _glob
+import os as _os
+
+# Prepare modules for search function and for import
+_folder_path_for_glob = _os.path.join(_os.path.dirname(__file__), "*")
+_all_file_names = [_os.path.basename(path) for path in _glob(_folder_path_for_glob)]
+_all_modules_str = []
+for _name in _all_file_names:
+    if (_name[-3:] == ".py") and (_name[0] != "_"):
+        _all_modules_str.append(_name[:-3])
 
 
 # Import all the modules correctly and exposes everything callable to the search function.
-all_searchable = []
-for module in _all_modules_str:
-    exec(f"from . import {module}")
-    exec(f"module_all = {module}.__all__") # Every module in `.` has everything which should be visible in `__all__`
-    exec("all_searchable += [f'{module}.{s}' for s in module_all]")
+_all_searchable = []
+for _module in _all_modules_str:
+    exec(f"from . import {_module}")
+    exec(f"_module_all = {_module}.__all__") # Every module in `.` has everything which should be visible in `__all__`
+    exec("_all_searchable += [f'{_module}.{s}' for s in _module_all]")
 
 
 def search(name:str):
@@ -37,29 +44,23 @@ def search(name:str):
     NOTE: The function is case insensitive e.g. 'RGB' and 'rgb' are interpreted the same
     """
     if not isinstance(name, str):
-        TypeError(f"Expected type `str`, but received type `{type(name)}`")
+        raise TypeError(f"Expected type `str`, but received type `{type(name)}`")
 
-    matching_results = [search_result for search_result in all_searchable if name.lower() in search_result.lower()]
+    matching_results = [search_result for search_result in _all_searchable if name.lower() in search_result.lower()]
     return sorted(matching_results)
 
 #________________________________________________________________________________________________________________
 # TODO:
 
 # 1.) Fix system info print, when not nvidia and remove pytorch cuda dependencies.
-# 2.) Find a way to check that __all__ contains everything
-# 3.) Check if there's a raise in front of all errors 
-# 4.) Fix the folder structure, such that every sub package e.g. `dutils.image` has its own folder.
-#     This would alleviate much of the import shenanigans
-# 5.) After the folder structure has been fixed, remove "_names" from __all__ e.g. "colors._assert_color_scheme"
-#     which is only there for testing purposes
-# 6.) pytorch: 
-#        * Save and load model.
-#        * Add "on_kaggle" option to U.pytorch.templates.config_file, such that it uses Kaggle's secrets to log in to WB
+# 2.) pytorch: 
+#    * Save and load model.
+# 3.) Add unit tests to images and to pytorch
 # 
 
 
 
-# NOTES AND IDEAS:
+# NOTES, IDEAS AND RANDOM THROUGHTS:
 
 # Integrate pandas_profiling in some way, perhaps just a "print what you're supposed to do" kinda thing
 # Make pandas print helper: "df.describe(), df.info() ..." just a bunch of different pandas commands in one place
