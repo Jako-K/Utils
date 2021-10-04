@@ -13,7 +13,7 @@ EXAMPLE:
 # *  The whole "underscore in front of modules" shenanigans I've used in most of the modules is only there to prevent
 #    namespace pollution e.g. `dutils.images.np` is avoided this way and `np` will therefore not be visible to the user
 #    This is, admittedly, not a pretty solution, but I feel like you should be able to use autocomplete to quickly
-#    browse which functionality is avaliable. And this would be pretty darn hard if you had to scroll through a bunch
+#    browse which functionality is available. And this would be pretty darn hard if you had to scroll through a bunch
 #    of irrelevant imports such as np, os, sys etc.
 #_______________________________________________________________________________________________________________________
 
@@ -49,27 +49,21 @@ def search(name:str):
     matching_results = [search_result for search_result in _all_searchable if name.lower() in search_result.lower()]
     return sorted(matching_results)
 
+
 #________________________________________________________________________________________________________________
 # TODO:
 
 # 1.) Fix system info print, when not nvidia and remove pytorch cuda dependencies.
-# 2.) pytorch: 
-#    * Save and load model.
+# 2.) pytorch. Save and load model.
 # 3.) Add unit tests to images and to pytorch
-# 
+# 4.) Sound to mel spectrogram
+# 5.) cv2 text to image helper
+# 6.) Integrate pandas_profiling in some way, perhaps just a "print what you're supposed to do" kinda thing
 
 
+# NOTES, IDEAS AND RANDOM THOUGHTS:
 
-# NOTES, IDEAS AND RANDOM THROUGHTS:
-
-# Integrate pandas_profiling in some way, perhaps just a "print what you're supposed to do" kinda thing
-# Make pandas print helper: "df.describe(), df.info() ..." just a bunch of different pandas commands in one place
-# "jupyter nbconvert readme.ipynb --to markdown"
-# Make plot numpy image function
-
-# Sound to mel-spectrogram
 # seaborn.set_context(context="talk")  |  https://seaborn.pydata.org/generated/seaborn.set_context.html
-# cv2 text to image helper
 
 # Add color print option e.g. print_in(text, "orange")
 

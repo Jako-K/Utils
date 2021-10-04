@@ -430,16 +430,15 @@ class Cv2Webcam:
 
     NOTES:
     * Intended use through the abstract method `on_update`.
+      where the current frame can be accessed through self.image, manipulated and then returned for displaying
     * Quit on `q`
     * Save frame on `space`
 
     EXAMPLE:
     class Cam(Cv2Webcam):
         def on_update(self):
-            ...
-            Do some cool stuff with the captured frame which can be accessed through `self.frame`
-            ...
-            return modified_frame_for_display
+            new_frame = cv2.resize(self.frame, (512,512))
+            return new_frame
 
     new_cam = Cam()
     new_cam.start()
@@ -507,7 +506,7 @@ class Cv2Webcam:
 
 
         @return: A frame which will be displayed in cv2. Must have type `np.ndarray` or `None`.
-                       If `None` is returned no frame will be displayed
+                 If `None` is returned no frame will be displayed
         """
         raise NotImplementedError("`on_update` must be implemented")
 

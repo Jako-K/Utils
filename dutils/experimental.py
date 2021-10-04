@@ -31,6 +31,8 @@ def load_unspecified(path:str):
     """
     Try and load whatever is being passed: image.jpg, sound.wav, text.txt etc.
     and return it in an appropriote format.
+    The reason why this could be nice, is that if you dont know where some specific loader is e.g. image_load
+    This would just automatically find it for you, or say that it just don't exists
 
     # TODO is this a good idea?
     
@@ -62,7 +64,7 @@ def confusion_matrix_binary(targets:_np.ndarray, preds:_np.ndarray, plot:bool=Tr
     # Checks
     _type_check.assert_types([targets, preds, plot], [_np.ndarray, _np.ndarray, bool])
     if len(targets) == 1 and len(preds) == 1:
-        raise ValueError("Expected `target` and `preds` to be 1 dimensional, "
+        raise ValueError("Expected `targets` and `preds` to be 1 dimensional, "
                          f"but received `{targets.shape}` and `{preds.shape}`")
     if targets.shape[0] != preds.shape[0]:
         raise ValueError(f"Length mismatch. `len(targets)={len(targets)}` and `len(preds)={len(preds)}`")
@@ -72,6 +74,8 @@ def confusion_matrix_binary(targets:_np.ndarray, preds:_np.ndarray, plot:bool=Tr
         raise ValueError("Expected `targets` to only contain 0 and 1, but received something else")
     if _np.in1d(preds, [0, 1]).sum() != preds.shape[0]:
         raise ValueError("Expected `preds` to only contain 0 and 1, but received something else")
+    if preds.sum() == len(preds) or targets.sum() == len(targets) or not preds.sum() or not targets.sum():
+        raise ValueError("`targets` and `preds` must both contain at least one `0` and one `1`")
 
 
     # Construct confusion matrix and its plt stuff
@@ -81,11 +85,11 @@ def confusion_matrix_binary(targets:_np.ndarray, preds:_np.ndarray, plot:bool=Tr
         rownames=['Actual'], colnames=['Predicted']
     )
     fig, ax = _plt.subplots(figsize=(10,8))
-    _sns.heatmap(cm / cm.sum().sum(), annot=True, cmap="Blues", ax=ax)
+    _sns.heatmap(cm / cm.sum().sum(), annot=True, cmap="Blues", annot_kws={"size":25}, ax=ax)
 
     # Calculate key stats
     key_values = {
-        "accuracy": (targets == preds).sum() / len(targets),
+        "accuracy": round((targets == preds).sum() / len(targets),3),
         "sensitivity": round(cm.loc[1, 1] / (cm.loc[1, 1] + cm.loc[0, 1]), 3),
         "specificity": round(cm.loc[0, 0] / (cm.loc[0, 0] + cm.loc[1, 0]), 3),
         "0/1 target balance": (round(targets.sum()/len(targets),3), round(1 - targets.sum()/len(targets),3))
@@ -98,8 +102,8 @@ def confusion_matrix_binary(targets:_np.ndarray, preds:_np.ndarray, plot:bool=Tr
     ax.set_title(to_title[:-4])
 
     # Add labels (e.g. FN = False negative) to each cell
-    for (x,y,t) in [(0.43, 0.4,"TN"), (1.43, 0.4,"FP"), (0.43, 1.4,"FN"), (1.43, 1.4,"TP")]:
-        ax.text(x, y, t, fontsize=15, color=(0.25,0.25,0.25), bbox={'facecolor': 'lightblue', 'alpha':0.5})
+    for (x,y,t) in [(0.425, 0.35,"TN"), (1.425, 0.35,"FP"), (0.425, 1.35,"FN"), (1.425, 1.35,"TP")]:
+        ax.text(x, y, t, fontsize=24, color=(0.25,0.25,0.25), bbox={'facecolor': 'lightblue', 'alpha':0.5})
 
     if plot: _plt.show()
     return fig, ax, key_values

@@ -22,5 +22,6 @@ setup(
         "Pillow",
         "validators",
         "pynput",
+        "wandb"
     ]
 )

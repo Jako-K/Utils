@@ -115,14 +115,20 @@ def get_file_basename(path:str, with_extension:bool=False, assert_path_exists:bo
     return basename
 
 
-def write_to_file(file_path:str, write_string:str):
-    """ Append string to the end of a file """
+def write_to_file(file_path:str, append_str:str):
+    """
+    Adds `append_str` to the end of the file located at `file_path`
+
+    @param file_path: Path to the file. This file must exists already, and will cause an error if not.
+    @param append_str: String that's added to the end of the file
+    @return:
+    """
     # Checks
-    _type_check.assert_type(write_string, str)
+    _type_check.assert_types([file_path, append_str], [str, str])
     assert_path(file_path)
 
     file = open(file_path, mode="a")
-    print(write_string, file=file, end="")
+    print(append_str, file=file, end="")
     file.close()
 
 
@@ -154,7 +160,6 @@ def read_file(path:str):
     f.close()
 
     return return_string
-
 
 
 def save_as_pickle(obj:object, file_name:str, save_path:str=None):

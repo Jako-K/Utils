@@ -11,12 +11,13 @@ import warnings as _warnings
 import itertools as _itertools
 import datetime as _datetime
 import numpy as _np
-import matplotlib as _matplotlib
 import matplotlib.pyplot as _plt
+import wandb as _wandb
 
 from . import type_check as _type_check
 from . import system_info as _system_info
 from . import colors as _colors
+
 
 
 class ArcFaceClassifier(_nn.Module):
@@ -277,7 +278,7 @@ class _Templates:
             """
                 from kaggle_secrets import UserSecretsClient
                 wandb.login(key=UserSecretsClient().get_secret("wandb_api_key"))
-            """ if on_kaggle else wandb.login()
+            """ if on_kaggle else _wandb.login()
         string = \
             f"""
             class Config:
