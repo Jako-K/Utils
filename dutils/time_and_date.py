@@ -5,7 +5,6 @@ Make it more convenient to work with time and dates
 
 import time as _time
 from datetime import timedelta as _timedelta
-import numpy as _np
 from . import type_check as _type_check
 
 

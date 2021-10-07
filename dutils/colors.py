@@ -7,8 +7,7 @@ Example:
 >> colors.random_color(color_type="hex", amount=2)
 ['#c51cbe', '#0dc76a']
 """
-# TODO: Add support for BGR
-# TODO: Add @param to all
+
 
 import re as _re
 import random as _random
@@ -136,12 +135,15 @@ def convert_color(color, convert_to:str):
     # It's necessary to know `convert_from_type` with certainty to avoid a factorial number of if statements
     # That is, avoid stuff like --> if (convert_from_type == "hex") and (convert_to == "rgb"): ...
     if convert_from_type != "rgb":
-        if convert_from_type == "hex": color = _hex_to_rgb(color)
-        elif convert_from_type == "rgb_01": [int(c*255) for c in color] # rgb_01 -> rgb
-        else: raise AssertionError("Shouldn't have gotten this far")
+        if convert_from_type == "hex":
+            color = _hex_to_rgb(color)
+        elif convert_from_type == "rgb_01":
+            color = [int(c*255) for c in color] # rgb_01 -> rgb
+        else:
+            raise AssertionError("Shouldn't have gotten this far")
 
 
-    if (convert_from_type == convert_to) or (convert_to == "rgb"):
+    if convert_to == "rgb":
         return color
     elif convert_to == "hex":
         return _rgb_to_hex(color)

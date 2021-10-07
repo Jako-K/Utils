@@ -3,7 +3,6 @@ Description:
 Helper functions for working with I/O
 """
 
-# TODO add @param to all functions
 
 import os as _os
 import sys as _sys

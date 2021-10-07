@@ -2,9 +2,6 @@
 DESCRIPTION:
 Make it more convenient to check types
 """
-# TODO: Add a is_iterable function: which would for instance accept both: list, tuples, np.ndarray etc.
-# TODO: Add `assert_in` function which can check if a value is in a list/tuple
-# TODO Fix the order: assert_comparison_number(rows, 1, ">=", "rows") ==> rows, ">=", 1, "rows".
 
 from types import ModuleType
 NoneType = type(None)
@@ -149,7 +146,6 @@ def assert_comparison_number(number, check_against, comparison:str, number_name:
         raise ValueError(f"Expected `{number_name}` > `{check_against}`, but received `{number_name}={number}`")
     elif higher_or_equal and not (number >= check_against):
         raise ValueError(f"Expected `{number_name}` >= `{check_against}`, but received `{number_name}={number}`")
-
 
 
 __all__ = [

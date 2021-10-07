@@ -1,6 +1,3 @@
-# TODO: Add unit tests
-# TODO: Combine
-
 
 import numpy as _np
 from PIL import Image as _Image

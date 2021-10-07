@@ -3,11 +3,11 @@ Description
 Stuff that hasen't been tested yet or that I'm on the fence about
 """
 import pydicom as _dicom
-import matplotlib.pylab as _plt
 import numpy as _np
 import warnings as _warnings
 import pandas as _pd
 import seaborn as _sns
+import matplotlib.pylab as _plt
 
 
 from . import colors as _colors
@@ -46,71 +46,7 @@ def load_unspecified(path:str):
     raise NotImplementedError("")
 
 
-def confusion_matrix_binary(targets:_np.ndarray, preds:_np.ndarray, plot:bool=True):
-    """
-    Plot a classic confusion matrix for binary `targets` and `predictions` alongside som key statistics.
-
-    EXAMPLE:
-    >> t = np.array([1,0,1,0,0,0,1,0,0,1,1,0])
-    >> p = np.array([1,0,1,1,0,1,1,0,1,0,0,1])
-    >> U.experimental.confusion_matrix_binary(t,p)
-
-    @param targets: A np.ndarray containing the real values
-    @param preds: A np.ndarray containing the prediction values
-    @param plot: If the plt.show() should be called within the function
-    @return: (fig: plt figure, ax: plt axis, key_values: dict with key statistics e.g. accuracy).
-    """
-
-    # Checks
-    _type_check.assert_types([targets, preds, plot], [_np.ndarray, _np.ndarray, bool])
-    if len(targets) == 1 and len(preds) == 1:
-        raise ValueError("Expected `targets` and `preds` to be 1 dimensional, "
-                         f"but received `{targets.shape}` and `{preds.shape}`")
-    if targets.shape[0] != preds.shape[0]:
-        raise ValueError(f"Length mismatch. `len(targets)={len(targets)}` and `len(preds)={len(preds)}`")
-    if (targets.dtype.kind not in list('buif')) or (preds.dtype.kind not in list('buif')):
-        raise TypeError("`targets` and/or `preds` contain non-numerical values")
-    if _np.in1d(targets, [0, 1]).sum() != targets.shape[0]:
-        raise ValueError("Expected `targets` to only contain 0 and 1, but received something else")
-    if _np.in1d(preds, [0, 1]).sum() != preds.shape[0]:
-        raise ValueError("Expected `preds` to only contain 0 and 1, but received something else")
-    if preds.sum() == len(preds) or targets.sum() == len(targets) or not preds.sum() or not targets.sum():
-        raise ValueError("`targets` and `preds` must both contain at least one `0` and one `1`")
-
-
-    # Construct confusion matrix and its plt stuff
-    cm = _pd.crosstab(
-        _pd.Series(targets, name="Actual"),
-        _pd.Series(preds, name="Predicted"),
-        rownames=['Actual'], colnames=['Predicted']
-    )
-    fig, ax = _plt.subplots(figsize=(10,8))
-    _sns.heatmap(cm / cm.sum().sum(), annot=True, cmap="Blues", annot_kws={"size":25}, ax=ax)
-
-    # Calculate key stats
-    key_values = {
-        "accuracy": round((targets == preds).sum() / len(targets),3),
-        "sensitivity": round(cm.loc[1, 1] / (cm.loc[1, 1] + cm.loc[0, 1]), 3),
-        "specificity": round(cm.loc[0, 0] / (cm.loc[0, 0] + cm.loc[1, 0]), 3),
-        "0/1 target balance": (round(targets.sum()/len(targets),3), round(1 - targets.sum()/len(targets),3))
-    }
-
-    # Add key stats to the title
-    to_title = ""
-    for name, value in key_values.items():
-        to_title += f"{name}: {value}  |  "
-    ax.set_title(to_title[:-4])
-
-    # Add labels (e.g. FN = False negative) to each cell
-    for (x,y,t) in [(0.425, 0.35,"TN"), (1.425, 0.35,"FP"), (0.425, 1.35,"FN"), (1.425, 1.35,"TP")]:
-        ax.text(x, y, t, fontsize=24, color=(0.25,0.25,0.25), bbox={'facecolor': 'lightblue', 'alpha':0.5})
-
-    if plot: _plt.show()
-    return fig, ax, key_values
-
-
 __all__ = [
     "show_dicom",
     "load_unspecified",
-    "confusion_matrix_binary",
 ]

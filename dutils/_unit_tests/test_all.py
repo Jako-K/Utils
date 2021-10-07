@@ -1,7 +1,3 @@
-# If True, tests things which are kinda annoying: plots (manually close), prints etc.
-VERBOSE = True
-
-
 import pandas as pd
 import numpy as np
 import os as os
@@ -12,6 +8,15 @@ import unittest
 import matplotlib.pyplot as plt
 from dutils import input_output
 import dutils as U
+
+
+########################################################################################################################
+################################             Pretest stuff and controls                #################################
+########################################################################################################################
+
+
+# If True, tests things which are kinda annoying: plots (manually close), prints etc.
+VERBOSE = True
 
 # Automatic key press to close windows
 AUTO_PRESS = True # Will automatically close windows activated by VERBOSE=True
@@ -32,7 +37,7 @@ for (boolean, string) in [(False, "without spacing"), (True, "with spacing")]:
           f" - Total: {test_count + code_count}\n")
 
 
-# Check that every module has correctly filled in its __all__ attribute. This is important cause `dutils.search` use it
+# Check that every module has correctly filled in its __all__ attribute. This is important cause `dutils.search` uses it
 public_modules = [var for var in dir(U) if var[0] != "_" and var != "search"]
 not_accounted_for = []
 

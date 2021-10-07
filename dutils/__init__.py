@@ -53,20 +53,45 @@ def search(name:str):
 #________________________________________________________________________________________________________________
 # TODO:
 
-# 1.) Fix system info print, when not nvidia and remove pytorch cuda dependencies.
-# 2.) pytorch. Save and load model.
-# 3.) Add unit tests to images and to pytorch
-# 4.) Sound to mel spectrogram
-# 5.) cv2 text to image helper
-# 6.) Integrate pandas_profiling in some way, perhaps just a "print what you're supposed to do" kinda thing
+# system_info
+#   * Fix print when not nvidia and remove pytorch cuda dependencies.
+
+# Pytorch:
+#   * Save and load model.
+#   * Refactor and delete unused functions
+#   * Add missing checks
+
+# Color:
+#    * add HSV and BGR support
+#    * Add @param to all
+
+# Misc:
+#   * Sound to mel spectrogram
+#   * cv2 text to image helper
+#   * Integrate pandas_profiling in some way, perhaps just a "print what you're supposed to do" kinda thing
+
+# Images:
+#   * Image combine function, with an adjustable merge parameter i.e. what percentage `p` of image_a and image_b=(1-p)
+
+# input_output:
+#   * @param to all functions
+
+# type_checks:
+#   * Add a is_iterable function: which would for instance accept both: list, tuples, np.ndarray etc.
+#   * This is confusing: assert_comparison_number(rows, 1, ">=", "rows") change to order to: (rows, ">=", 1, "rows")
+
+# Unit tests:
+#   * Images
+#   * Pytorch
+#   * Colors
 
 
 # NOTES, IDEAS AND RANDOM THOUGHTS:
 
+# The image module could have a Image class which could hold stuff like format e.g. "RGB"
+# Should country_converter even be here? There must be some other implementation which has already done it?
 # seaborn.set_context(context="talk")  |  https://seaborn.pydata.org/generated/seaborn.set_context.html
-
 # Add color print option e.g. print_in(text, "orange")
-
 # Plotly build-in color schemes and other plotly stuff perhaps an entire module.
 # 	px.colors.qualitative.swatches().show()
 # 	pio.templates.default = "seaborn"
