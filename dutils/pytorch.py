@@ -197,10 +197,10 @@ class _Templates:
             ###################################################################################################
     
             for epoch in tqdm(range(C.epochs)):
-                train_losses, valid_losses = np.zeros(len(train_dl)), np.zeros(len(valid_dl))
+                train_losses, valid_losses = np.zeros(len(dl_train)), np.zeros(len(dl_valid))
     
                 model.train()
-                for i, (images, labels) in enumerate(tqdm(train_dl, leave=False)):
+                for i, (images, labels) in enumerate(tqdm(dl_train, leave=False)):
                     images, labels = images.to(C.device), labels.to(C.device)
     
                     # Forward pass
@@ -217,7 +217,7 @@ class _Templates:
     
                 model.eval()
                 with torch.no_grad():
-                    for i, (images, labels) in enumerate(tqdm(valid_dl, leave=False)):
+                    for i, (images, labels) in enumerate(tqdm(dl_valid, leave=False)):
                         images, labels = images.to(C.device), labels.to(C.device)
     
                         # Forward pass
@@ -237,8 +237,11 @@ class _Templates:
                     wandb.log({"train_loss": train_mean, "valid_loss": valid_mean, "lr":lr})
     
                 if (epoch > 0) and (stats["valid_loss"][epoch] < stats["valid_loss"][epoch-1]): # Save model if it's better
+                    if C.save_only_best_model and (best_model_name != "0_EPOCH.pth"): 
+                        U.input_output.remove_file(f"./{best_model_name}")
+                        
                     extra_info = {"valid_loss":valid_mean, "epochs_trained":C.epochs_trained}
-                    best_model_name = T.get_model_save_name(extra_info, "model.pth", include_time=True)
+                    best_model_name = U.pytorch.get_model_save_name("model.pth", extra_info, include_time=True)
                     torch.save(model.state_dict(), best_model_name)
     
             ###################################################################################################
@@ -286,7 +289,9 @@ class _Templates:
                 debug = True
                 use_wandb = False
                 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    
+                validation_percentage = 0.10
+                save_only_best_model = True
+                
                 # Path
                 main_path = ""; assert os.path.exists(main_path)
                 csv_path = ".csv"; assert os.path.exists(csv_path)
@@ -304,7 +309,8 @@ class _Templates:
                 optimizer = torch.optim.Adam
                 scheduler_hyper = dict(lr_lambda = lambda epoch: 0.85 ** epoch)
                 scheduler = torch.optim.lr_scheduler.LambdaLR
-    
+                architecture = "efficientnet_b3"
+                
                 # Seed everything
                 U.pytorch.seed_torch(seed = 12, deterministic = False)
                 
@@ -321,7 +327,7 @@ class _Templates:
                     scheduler = (scheduler, scheduler_hyper),
                     dataset="MNIST",
                     architecture="Resnet18",
-                    notes="resnet 18 is pretrained ... expect to see ... using ABC is questionable"
+                    notes="efficientnet_b3 is pretrained ... expect to see ... using ABC is questionable"
                 )
     
             C = Config()

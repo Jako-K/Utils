@@ -10,19 +10,20 @@ from . import type_check as _type_check
 from . import input_output as _input_output
 
 
-# Just convenient to have it here as well
-# show_image = Images.show_image
-
 def in_jupyter():
-    # Not the cleanest, but gets the job done
+    """
+    Check if python is currently running in a jupyter enviroment.
+    NOTE: The implementation is somewhat dubious, but have tested it to the best of my abilities
+    """
+
     try:
-        shell = get_ipython().__class__.__name__ # This is supposed to be an unresolved reference
+        shell = get_ipython().__class__.__name__ # This is supposed to be an unresolved reference anywhere outside jupyter
         if shell == 'ZMQInteractiveShell':
             return True  # Jupyter notebook or qtconsole
         elif shell == 'TerminalInteractiveShell':
             return False  # Terminal running IPython
         else:
-            return False  # Other type (?)
+            return False  # Other type (?), going to assume that we are not in jupyter
     except NameError:
         return False  # Probably standard Python interpreter
 

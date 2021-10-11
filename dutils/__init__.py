@@ -8,15 +8,6 @@ EXAMPLE:
 ['images.get_image_from_url', 'images.show_image', ...]
 """
 
-# NOTES:
-#_______________________________________________________________________________________________________________________
-# *  The whole "underscore in front of modules" shenanigans I've used in most of the modules is only there to prevent
-#    namespace pollution e.g. `dutils.images.np` is avoided this way and `np` will therefore not be visible to the user
-#    This is, admittedly, not a pretty solution, but I feel like you should be able to use autocomplete to quickly
-#    browse which functionality is available. And this would be pretty darn hard if you had to scroll through a bunch
-#    of irrelevant imports such as np, os, sys etc.
-#_______________________________________________________________________________________________________________________
-
 
 from glob import glob as _glob
 import os as _os
@@ -50,8 +41,8 @@ def search(name:str):
     return sorted(matching_results)
 
 
-#________________________________________________________________________________________________________________
 # TODO:
+#_______________________________________________________________________________________________________________________
 
 # system_info
 #   * Fix print when not nvidia and remove pytorch cuda dependencies.
@@ -60,10 +51,20 @@ def search(name:str):
 #   * Save and load model.
 #   * Refactor and delete unused functions
 #   * Add missing checks
+#   * Custom DataLoader that can .to(device) and do some custom stuff before getting batch e.g. squeeze(1)
+#   * Need a way to test the templates
+#   * template: dataset/dataloader setup with train/valid split
+#   * template: optimizer = C.optimizer(model.parameters(), **C.optimizer_hyper)
+#               scheduler = C.scheduler(optimizer, **C.scheduler_hyper)
+#               criterion = C.criterion
+#   * template: cross validation loop?
+#   * template: add a safe model per epoch plot?
+
 
 # Color:
 #    * add HSV and BGR support
 #    * Add @param to all
+#    * I've heard that random color creation is much better in HSV (less muddy colors) and then convert to RGB. Try it
 
 # Misc:
 #   * Sound to mel spectrogram
@@ -72,21 +73,40 @@ def search(name:str):
 
 # Images:
 #   * Image combine function, with an adjustable merge parameter i.e. what percentage `p` of image_a and image_b=(1-p)
+#   * to_greyscale
 
 # input_output:
 #   * @param to all functions
 
 # type_checks:
-#   * Add a is_iterable function: which would for instance accept both: list, tuples, np.ndarray etc.
+#   * Add a is_list_like function: which would for instance accept both: list, tuples, np.ndarray etc.
+#     but not something like a string even though it has __iter__
 #   * This is confusing: assert_comparison_number(rows, 1, ">=", "rows") change to order to: (rows, ">=", 1, "rows")
+
 
 # Unit tests:
 #   * Images
 #   * Pytorch
 #   * Colors
+#   * Jupyter: Would it be possible to run the test_jupyter.ipynb notebook from within the test_all.py file?
+# ______________________________________________________________________________________________________________________
+
+
+
+# NOTES:
+#_______________________________________________________________________________________________________________________
+# *  The whole "underscore in front of modules" shenanigans I've used in most of the modules is only there to prevent
+#    namespace pollution e.g. `dutils.images.np` is avoided this way and `np` will therefore not be visible to the user
+#    This is, admittedly, not a pretty solution, but I feel like you should be able to use autocomplete to quickly
+#    browse which functionality is available. And this would be pretty darn hard if you had to scroll through a bunch
+#    of irrelevant imports such as np, os, sys etc.
+#_______________________________________________________________________________________________________________________
+
+
 
 
 # NOTES, IDEAS AND RANDOM THOUGHTS:
+# ______________________________________________________________________________________________________________________
 
 # The image module could have a Image class which could hold stuff like format e.g. "RGB"
 # Should country_converter even be here? There must be some other implementation which has already done it?
@@ -96,4 +116,4 @@ def search(name:str):
 # 	px.colors.qualitative.swatches().show()
 # 	pio.templates.default = "seaborn"
 # 	print(px.colors.qualitative.Plotly)
-#________________________________________________________________________________________________________________
+# ______________________________________________________________________________________________________________________
