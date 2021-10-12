@@ -74,7 +74,7 @@ def bucket_continuous_feature(data:_np.ndarray, bins:int, plot:bool=True) -> _pd
         buckets_density = df.groupby("bucket_label").count()["value"] / len(df)
         _plt.figure(figsize=(15, 7))
         _plt.bar(range(len(buckets_density)), buckets_density)
-        _plt.title("Buckets used to make stratified folds")
+        _plt.title("Bucket distribution")
         _plt.xlabel("Bucket label")
         _plt.ylabel("Density")
 
@@ -89,18 +89,19 @@ def stratified_folds(labels:_np.ndarray, folds:int, seed:int=12, as_pandas:bool=
     @param folds: Number of folds
     @param seed: seed used in sklearn's StratifiedKFold
     @param as_pandas: return a pandas DataFrame
-    @return: pandas DataFrame with folds if `as_pandas`
-             else a dict of folds:int as keys and fold_indexes:np.ndarray as values
+    @return: pandas DataFrame with fold information if `as_pandas`
+             else a dict with --> {folds:int = (train_idx:np.ndarray, valid_idx:np.ndarray) ...} as values
     """
-    df = _pd.DataFrame(_np.zeros(len(labels)), columns=["fold"], dtype=int)
 
     # Assign stratified folds
     kf = _StratifiedKFold(n_splits=folds, random_state=seed, shuffle=True)
-    iterator = kf.split(X=labels, y=labels) # X=labels was just the easiest, it gets discarded anyway.
+    iterator = kf.split(X=np.arange(len(labels)), y=labels) # X=labels was just the easiest, it gets discarded anyway.
 
     if not as_pandas:
-        return {fold:fold_idx for fold, (_, fold_idx) in enumerate(iterator)}
+        return {fold:(train_idx, valid_idx) for fold, (train_idx, valid_idx) in enumerate(iterator)}
 
+    # If as pandas
+    df = _pd.DataFrame(_np.zeros(len(labels)), columns=["fold"], dtype=int)
     for i, (_, fold_idx) in iterator:
         df.loc[fold_idx, 'fold'] = i
 
