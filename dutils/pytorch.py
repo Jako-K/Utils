@@ -608,6 +608,26 @@ def fold_performance_plot(data:_np.ndarray, stds: int = 1):
     return fig
 
 
+from torch.utils.data import DataLoader as _DataLoader
+class DataLoaderPlus:
+    """
+    A simple wrapper class for pytorch's DataLoader class.
+    The intended use is a to provide a somewhat simple `preprocess_func`
+    e.g. .to_device()
+    """
+    def __init__(self, dl:_DataLoader, preprocess_func:_type_check.FunctionType):
+        self.dl = dl
+        self.f = preprocess_func
+
+    def __len__(self):
+        return len(self.dl)
+
+    def __iter__(self):
+        for b in self.dl:
+            yield self.f(*b)
+
+
+
 __all__ = [
     "ArcFaceClassifier",
     "arcface_loss",

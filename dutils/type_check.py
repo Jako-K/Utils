@@ -3,8 +3,10 @@ DESCRIPTION:
 Make it more convenient to check types
 """
 
+# TODO Add unit tests for all 3 types
 from types import ModuleType
 NoneType = type(None)
+FunctionType = type(lambda : None)
 
 
 # General
@@ -156,4 +158,5 @@ __all__ = [
     "assert_comparison_number",
     "NoneType",
     "ModuleType",
+    "FunctionType",
 ]

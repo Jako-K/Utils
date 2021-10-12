@@ -59,7 +59,7 @@ def search(name:str):
 #               criterion = C.criterion
 #   * template: cross validation loop?
 #   * template: add a safe model per epoch plot?
-
+#   * add a function: bucket continuous data for stratified folds
 
 # Color:
 #    * add HSV and BGR support

@@ -27,7 +27,9 @@ def get_imports(all_requests:list=None):
     import wandb
     import torch
     import torch.nn as nn
-    import torch.nn.functional as F\
+    import torch.nn.functional as F
+    from torch.utils.data import DataLoader
+    from sklearn.model_selection import train_test_split\
     """
 
     vision_imp = \
