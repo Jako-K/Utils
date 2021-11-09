@@ -86,7 +86,7 @@ def pillow_resize_image(image: _Image.Image, resize_factor: float = 1.0):
     Resize `image` according to `resize_factor`
 
     @param image: Image in PIL.Image format
-    @param resize_factor: Rescale factor in percentage, `scale_factor` < 0
+    @param resize_factor: Rescale factor in percentage e.g. 0.25 would decrease the resolution by 75%
     @return: Resized image in PIL.Image format
     """
     _type_check.assert_types([image, resize_factor], [_Image.Image, float])
@@ -144,7 +144,7 @@ def ndarray_resize_image(image: _np.ndarray, resize_factor: float):
     Resize `image` according to `resize_factor`s
 
     @param image: Image in np.ndarray format
-    @param resize_factor: Rescale factor in percentage, `scale_factor` < 0
+    @param resize_factor: Rescale factor in percentage, e.g. 0.25 would decrease the resolution by 75%
     @return: Resized image in ndarray format
     """
     # Checks
@@ -407,7 +407,7 @@ def rotate_image(img: _np.ndarray, rotate_angle: int):
     Rotate `img` clockwise by `rotate_angle`. Use negative `rotate_angle` for counterclockwise rotation. 
     
     @param img: Images of type np.ndarray
-    @param rotate_angle: Degrees `img` is rotated by. NOTE: must be a multiple 90
+    @param rotate_angle: Degrees `img` is rotated by. must be within [0, 90, -90, 180, -180, -270, 270]
     """
 
     # Checks

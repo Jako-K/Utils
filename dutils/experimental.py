@@ -142,14 +142,22 @@ class DataLoaderDevice:
 def preprocess_video(load_path:str, save_path:str, save_every_nth_frame:int=3,
                      scale_factor:float = 0.5, rotate_angle:int=0, fps_out:int=10):
     """
-    Load the video located at `load_path` for processing: Reduce FPS by `save_every_nth_frame`, 
-    resize resolution by `scale_factor` and clockwise rotation by `rotate_angle` . 
+    Load video located at `load_path` for processing: Reduce FPS by `save_every_nth_frame`,
+    resize resolution by `scale_factor` and clockwise rotation by `rotate_angle` .
     The modified video is saved at `save_path` with a FPS of `fps_out`
 
     EXAMPLE:
     >> preprocess_video("video_in.avi", "video_out.mp4", 10, 0.35, -90, 10)
+
+    @param load_path: Load path to video for processing. Must be ".mp4" or ".avi"
+    @param save_path: Save path to processed video. Must be ".mp4" or ".avi"
+    @param save_every_nth_frame: Essentially a downscaling factor e.g. 3 would result in a video containing 1/3 of the frames
+    @param scale_factor: Determine the image size e.g. 0.25 would decrease the resolution by 75%
+    @param rotate_angle: Clockwise rotation of the image. must be within [0, 90, -90, 180, -180, -270, 270]
+    @param fps_out: The frame rate of the processed video which is saved at `save_path`
+    @return: None
     """
-    
+
     # Checks
     _type_check.assert_types(
         to_check=[load_path, save_path, save_every_nth_frame, scale_factor, rotate_angle, fps_out],
@@ -165,7 +173,7 @@ def preprocess_video(load_path:str, save_path:str, save_every_nth_frame:int=3,
     cap = _cv2.VideoCapture(load_path)
     frame_i = -1
 
-    # Prepare all frames for modifed video
+    # Prepare all frames for modified video
     while cap.isOpened():
         frame_i += 1
         video_feed_active, frame = cap.read()
@@ -192,9 +200,6 @@ def preprocess_video(load_path:str, save_path:str, save_every_nth_frame:int=3,
 
     _cv2.destroyAllWindows()
     video.release()
-
-
-
 
 __all__ = [
     "show_dicom",
