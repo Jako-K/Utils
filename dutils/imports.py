@@ -12,7 +12,7 @@ def get_imports(all_requests:list=None):
     Expect `all_requests` to be in `["torch", "torchvision", "all_around", "all"]`
     and to be a list e.g. ["all"]
     """
-    if all_requests is None: all_requests = ["all"] # To avoid mutable default argument
+    if all_requests is None: all_requests = ["all_around"] # To avoid mutable default argument
     legal_imports = ["torch", "torchvision", "all_around", "all"]
 
     # Checks

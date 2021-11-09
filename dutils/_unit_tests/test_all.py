@@ -8,6 +8,7 @@ import unittest
 import matplotlib.pyplot as plt
 from dutils import input_output
 import dutils as U
+from termcolor import colored
 
 
 ########################################################################################################################
@@ -15,20 +16,20 @@ import dutils as U
 ########################################################################################################################
 
 
-# If True, tests things which are kinda annoying: plots (manually close), prints etc.
+# If True, test things which are kinda annoying: plots (manually close), warning prints etc.
 VERBOSE = True
 
 # Automatic key press to close windows
 AUTO_PRESS = True # Will automatically close windows activated by VERBOSE=True
-from pynput.keyboard import Key, Controller
+from pynput.keyboard import Controller
 keyboard = Controller()
 if AUTO_PRESS:
-    plt.ion() # Makes plt not block other commands, which enable `keyboard` to automatically close windows
+    plt.ion() # Makes plt not block other commands, which enables `keyboard` to automatically close windows
 
 
-# Print total line count
+# Print total line count with and without spacing
 print("\n" * 2 + "_" * 70)
-for (boolean, string) in [(False, "without spacing"), (True, "with spacing")]:
+for (boolean, string) in [(False, "with spacing"), (True, "without spacing")]:
     test_count = input_output.get_line_count_file("./test_all.py", exclude_empty_lines=boolean)
     code_count, _ = input_output.get_line_counts_folder("../", only_extension=".py", exclude_empty_lines=boolean)
     print(f"Line counts ({string}):")
@@ -37,7 +38,7 @@ for (boolean, string) in [(False, "without spacing"), (True, "with spacing")]:
           f" - Total: {test_count + code_count}\n")
 
 
-# Check that every module has correctly filled in its __all__ attribute. This is important cause `dutils.search` uses it
+# Check that every module has its __all__ attribute filled in correctly. This is important cause `dutils.search` uses it
 public_modules = [var for var in dir(U) if var[0] != "_" and var != "search"]
 not_accounted_for = []
 
@@ -51,10 +52,10 @@ for module_str in public_modules:
             not_accounted_for.append(module_str + "." + p_var)
 
 if not_accounted_for:
-    print("not accounted for in __all__s:")
+    print(colored("not accounted for in __all__s:", "red"))
     [print(" - ", var) for var in not_accounted_for]
 else:
-    print("No missing values in any __all__\n\n")
+    print(colored("No missing values in any __all__\n\n", "green"))
 
 
 

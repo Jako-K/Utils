@@ -401,17 +401,18 @@ cv2_rotate_map = {
 }
 
 
+# Add unit tests
 def rotate_image(img: _np.ndarray, rotate_angle: int):
     """ 
-    Rotate `img` by `rotate_angle`.
+    Rotate `img` clockwise by `rotate_angle`. Use negative `rotate_angle` for counterclockwise rotation. 
     
     @param img: Images of type np.ndarray
     @param rotate_angle: Degrees `img` is rotated by. NOTE: must be a multiple 90
     """
 
     # Checks
-    _type_check.assert_types([img, rotate_angle], [_np.ndarray])
-    if rotate_angle not in list(cv2_rotate_map.values()):
+    _type_check.assert_types([img, rotate_angle], [_np.ndarray, int])
+    if rotate_angle not in list(cv2_rotate_map.keys()):
         raise ValueError(
             f"`rotate_angle={rotate_angle}` is not valid. Legal values are: "
             f"`{list(cv2_rotate_map.values())}`"
