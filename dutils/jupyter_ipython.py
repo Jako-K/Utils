@@ -1,3 +1,5 @@
+# TODO add unit test
+
 import IPython as _IPython
 import cv2 as _cv2
 import matplotlib.pyplot as _plt
@@ -5,6 +7,7 @@ from PIL import Image as _Image
 import numpy as _np
 import requests as _requests
 import validators as _validators
+from rectpack import newPacker as _newPacker
 
 from . import type_check as _type_check
 from . import input_output as _input_output
@@ -79,21 +82,59 @@ def play_audio(path:str, plot:bool=True):
         _plt.title(f"type: {audio_bar.mimetype} | duration: {duration} s | sample rate: {sample_rate}")
 
 
-# TODO add unit test
-def show_image(source, resize_factor:float=1.0, BGR2RGB:bool=None):
+def _get_mosaic_image(images:_np.ndarray, allow_rotations:bool=False):
     """
-    Display a single image from path, np.ndarray or url.
+    Used to pack `images` into one single image. This function is only intended to be used in `show_image()`
 
-    @param source: path, np.ndarray or url pointing to the image you wish to display
-    @param resize_factor: Rescale factor in percentage (i.e. 0-1), `scale_factor` < 0
-    @param BGR2RGB: Convert `source` from BGR to RGB. If `None`, will convert np.ndarray images automatically
+    @param images: list of images in np.ndarray format
+    @param allow_rotations: Determine if the packing algorithm is allowed to rotate the images
+    @return:A single mosaic image build from `images`
     """
 
-    # Simple checks
-    _type_check.assert_in(type(source), [_np.ndarray, str])
-    _type_check.assert_types([resize_factor, BGR2RGB], [float, bool], [0, 1])
-    assert_in_jupyter()
+    # Setup
+    rectangles = [(s.shape[0], s.shape[1], i) for i, s in enumerate(images)]
+    height_domain = [int(1080 * 4 / 1.05 ** i) for i in range(50, 0, -1)]
+    width_domain = [int(1920 * 4 / 1.05 ** i) for i in range(50, 0, -1)]
+    canvas_dims = list(zip(height_domain, width_domain))
+    canvas_image = None
 
+    # Attempt to pack all images within the smallest predefined width-height combination
+    for canvas_dim in canvas_dims:
+
+        # Try packing
+        packer = _newPacker(rotation=allow_rotations)
+        for r in rectangles: packer.add_rect(*r)
+        packer.add_bin(*canvas_dim)
+        packer.pack()
+
+        # If all images couldn't fit, try with a larger image
+        if len(packer.rect_list()) != len(images):
+            continue
+
+        # Setup
+        canvas_image = _np.zeros((canvas_dim[0], canvas_dim[1], 3)).astype(_np.uint8)
+        H = canvas_image.shape[0]
+
+
+        for rect in packer[0]:
+            image = images[rect.rid]
+            h, w, y, x = rect.width, rect.height, rect.x, rect.y
+
+            # Transform origin to upper left corner
+            y = H - y - h
+
+            # Handle image rotations if necessary
+            if image.shape[:-1] != (h, w): image = image.transpose(1, 0, 2)
+            canvas_image[y:y + h, x:x + w, :] = image
+        break
+
+    if canvas_image is None:
+        raise RuntimeError("Failed to produce mosaic image. The cause is most likely to many and/or to large images")
+
+    return canvas_image
+
+
+def _get_image(source, resize_factor: float = 1.0, BGR2RGB: bool = None):
     # `source` and `resize` checks
     is_path = _input_output.path_exists(source) if isinstance(source, str) else False
     is_url = True if isinstance(source, str) and _validators.url(source) is True else False
@@ -102,7 +143,8 @@ def show_image(source, resize_factor:float=1.0, BGR2RGB:bool=None):
     if not (is_path or is_url or is_ndarray):
         raise ValueError("`source` could not be interpreted as a path, url or ndarray.")
     if is_path + is_url + is_ndarray > 1:
-        raise AssertionError("This should not be possible") # Don't see how a path and a url can be valid simultaneously
+        raise AssertionError(
+            "This should not be possible")  # Don't see how a path and a url can be valid simultaneously
     if resize_factor < 0:
         raise ValueError(f"`resize_factor` > 0, received value of {resize_factor}")
 
@@ -120,7 +162,7 @@ def show_image(source, resize_factor:float=1.0, BGR2RGB:bool=None):
         # BGR --> RGB or BGRA --> RGBA
         as_array = _np.asarray(image)
         color_corrected = _cv2.cvtColor(as_array, _cv2.COLOR_BGR2RGB) if (num_channels == 3) \
-                          else _cv2.cvtColor(as_array, _cv2.COLOR_BGRA2RGBA)
+            else _cv2.cvtColor(as_array, _cv2.COLOR_BGRA2RGBA)
         image = _Image.fromarray(color_corrected)
 
     if resize_factor != 1.0:
@@ -128,7 +170,41 @@ def show_image(source, resize_factor:float=1.0, BGR2RGB:bool=None):
         height = int(image.size[1] * resize_factor)
         image = image.resize((width, height), resample=0, box=None)
 
-    display(image)
+    image = _np.asarray(image)
+
+    # Adds 3 identical channels to greyscale images (for compatibility)
+    if (len(image.shape) == 2) or (image.shape[-1] == 1):
+        image = _cv2.cvtColor(image, _cv2.COLOR_GRAY2RGB)
+
+    # Remove alpha channel (for compatibility)
+    if image.shape[-1] == 4:
+        image = image[:,:,:3]
+
+    return image
+
+
+def show_image(source, resize_factor: float = 1.0, BGR2RGB: bool = None):
+    """
+    Display a single image or a list of images from path, np.ndarray or url.
+
+    @param source: path, np.ndarray or url pointing to the image you wish to display
+    @param resize_factor: Rescale factor in percentage (i.e. 0-1), `scale_factor` < 0
+    @param BGR2RGB: Convert `source` from BGR to RGB. If `None`, will convert np.ndarray images automatically
+    """
+
+    # Simple checks
+    _type_check.assert_in(type(source), [_np.ndarray, str, list, tuple])
+    _type_check.assert_types([resize_factor, BGR2RGB], [float, bool], [0, 1])
+    assert_in_jupyter()
+
+    if type(source) not in [list, tuple]:
+        final_image = _get_image(source, resize_factor, BGR2RGB)
+    else:
+        images = [_get_image(image, resize_factor, BGR2RGB) for image in source]
+        final_image = _get_mosaic_image(images, allow_rotations=False)
+
+    final_image = _Image.fromarray(final_image)
+    display(final_image)
 
 
 __all__=[

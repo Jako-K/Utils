@@ -323,9 +323,9 @@ class Test_images(unittest.TestCase):
 
     def test_rotate_images(self):
         img = cv2.imread("./dragon.jpg")
-        self.assertEqual(cv2.rotate(img, cv2_rotate_map[90]).shape, (606, 465, 3))
-        self.assertEqual(cv2.rotate(img, cv2_rotate_map[180]).shape, (465, 606, 3))
-        self.assertEqual(cv2.rotate(img, cv2_rotate_map[270]).shape, (606, 465, 3))
+        self.assertEqual(rotate_image(img, 90).shape, (606, 465, 3))
+        self.assertEqual(rotate_image(img, 180).shape, (465, 606, 3))
+        self.assertEqual(rotate_image(img, 270).shape, (606, 465, 3))
 
 
     def test_assert_ndarray_image(self):

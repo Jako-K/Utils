@@ -20,23 +20,31 @@ from . import type_check as _type_check
 from . import images as _images
 from . import pytorch as _pytorch
 
+import pkg_resources as _pkg_resources
 
-def show_dicom(path:str):
+
+def load_dicom(path:str):
     # Checks
     _input_output.assert_path(path)
     if _input_output.get_file_extension(path)[-4:] != ".dcm":
         raise ValueError("Expected `.dcom` extension, but received something else")
 
-    dicom_image = _dicom.dcmread(path).pixel_array
+    return _dicom.dcmread(path).pixel_array
+
+def show_dicom(path:str):
+    dicom_image = load_dicom(path)
     _plt.imshow(dicom_image, cmap="bone")
     _plt.axis("off")
 
+def show_dicom_ndarray(dicom_image):
+    _plt.imshow(dicom_image, cmap="bone")
+    _plt.axis("off")
 
 def load_unspecified(path:str):
     """
     Try and load whatever is being passed: image.jpg, sound.wav, text.txt etc.
-    and return it in an appropriote format.
-    The reason why this could be nice, is that if you dont know where some specific loader is e.g. image_load
+    and return it in an appropriate format.
+    The reason why this could be nice, is that if you don't know where some specific loader is e.g. image_load
     This would just automatically find it for you, or say that it just don't exists
 
     # TODO is this a good idea?
@@ -139,12 +147,13 @@ class DataLoaderDevice:
             yield self._to_device_preprocess(b)
 
 
-def preprocess_video(load_path:str, save_path:str, save_every_nth_frame:int=3,
-                     scale_factor:float = 0.5, rotate_angle:int=0, fps_out:int=10):
+def preprocess_video(load_path:str, save_path:str, save_every_nth_frame:int=3, scale_factor:float = 0.5,
+                     rotate_angle:int=0, fps_out:int=10, extra_apply:_type_check.FunctionType=None):
     """
     Load video located at `load_path` for processing: Reduce FPS by `save_every_nth_frame`,
     resize resolution by `scale_factor` and clockwise rotation by `rotate_angle` .
     The modified video is saved at `save_path` with a FPS of `fps_out`
+    NOTE: The frames used to reconstruct the video is kept in memory during processing, which may be problematic for larger videos
 
     EXAMPLE:
     >> preprocess_video("video_in.avi", "video_out.mp4", 10, 0.35, -90, 10)
@@ -155,6 +164,7 @@ def preprocess_video(load_path:str, save_path:str, save_every_nth_frame:int=3,
     @param scale_factor: Determine the image size e.g. 0.25 would decrease the resolution by 75%
     @param rotate_angle: Clockwise rotation of the image. must be within [0, 90, -90, 180, -180, -270, 270]
     @param fps_out: The frame rate of the processed video which is saved at `save_path`
+    @param extra_apply: and extra function which can be applied to the image at the very end e.g. for cropping, noise etc.
     @return: None
     """
 
@@ -187,10 +197,11 @@ def preprocess_video(load_path:str, save_path:str, save_every_nth_frame:int=3,
             continue
             
         resized = _images.ndarray_resize_image(frame, scale_factor)
-        final = _images.rotate_image(resized, -90)
+        rotated = _images.rotate_image(resized, rotate_angle)
+        final = rotated if extra_apply is None else extra_apply(rotated)
         temp_images.append(final)
 
-    
+
     # Combine processed frames to video
     height, width, _ = temp_images[0].shape
     video = _cv2.VideoWriter(save_path, 0, fps_out, (width,height))
@@ -201,11 +212,71 @@ def preprocess_video(load_path:str, save_path:str, save_every_nth_frame:int=3,
     _cv2.destroyAllWindows()
     video.release()
 
+
+def normal_dist(x , mu , std):
+    return  1/(std*_np.sqrt(2*_np.pi)) * _np.exp(-0.5 * ((x - mu)/std)**2)
+
+
+def get_module_version(module_name:str):
+    _type_check.assert_type(module_name, str)
+    return _pkg_resources.get_distribution(module_name).version
+
+
+# import scipy.io
+# --> mat = scipy.io.loadmat('file.mat')
+
+
+# CV_RGB2HLS
+"""
+import cv2
+import numpy as np
+
+img = cv2.imread('messi5.jpg')
+gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+img_gaussian = cv2.GaussianBlur(gray,(3,3),0)
+
+#canny
+img_canny = cv2.Canny(img,100,200)
+
+#sobel
+img_sobelx = cv2.Sobel(img_gaussian,cv2.CV_8U,1,0,ksize=5)
+img_sobely = cv2.Sobel(img_gaussian,cv2.CV_8U,0,1,ksize=5)
+img_sobel = img_sobelx + img_sobely
+
+
+#prewitt
+kernelx = np.array([[1,1,1],[0,0,0],[-1,-1,-1]])
+kernely = np.array([[-1,0,1],[-1,0,1],[-1,0,1]])
+img_prewittx = cv2.filter2D(img_gaussian, -1, kernelx)
+img_prewitty = cv2.filter2D(img_gaussian, -1, kernely)
+
+
+cv2.imshow("Original Image", img)
+cv2.imshow("Canny", img_canny)
+cv2.imshow("Sobel X", img_sobelx)
+cv2.imshow("Sobel Y", img_sobely)
+cv2.imshow("Sobel", img_sobel)
+cv2.imshow("Prewitt X", img_prewittx)
+cv2.imshow("Prewitt Y", img_prewitty)
+cv2.imshow("Prewitt", img_prewittx + img_prewitty)
+
+
+cv2.waitKey(0)
+cv2.destroyAllWindows()
+"""
+
+
 __all__ = [
     "show_dicom",
+    "load_dicom",
+    "show_dicom_ndarray",
     "load_unspecified",
     "bucket_continuous_feature",
     "stratified_folds",
     "DataLoaderDevice",
-    "preprocess_video"
+    "preprocess_video",
+    "get_module_version",
+    "normal_dist"
 ]
+
+

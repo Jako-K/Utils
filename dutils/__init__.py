@@ -1,7 +1,7 @@
 """
 DESCRIPTION:
-A bunch of modules with task specific helper functions and alike.
-NOTE: `dutils.search("what_you_want_to_search_for")` can help you find what you're looking for
+A bunch of modules with helper functions and alike.
+NOTE: `dutils.search("what_you_want_to_search_for")` can help you find what you are looking for
 
 EXAMPLE:
 >> `dutils.search("image")`
@@ -72,6 +72,7 @@ def search(name:str):
 #   * Integrate pandas_profiling in some way, perhaps just a "print what you're supposed to do" kinda thing
 
 # Images:
+#   * `show_ndarray_image` take list of images for grid image display
 #   * Image combine function, with an adjustable merge parameter i.e. what percentage `p` of image_a and image_b=(1-p)
 #   * to_greyscale
 

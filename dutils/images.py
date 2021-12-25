@@ -1,4 +1,3 @@
-
 import numpy as _np
 from PIL import Image as _Image
 import requests as _requests
@@ -389,18 +388,6 @@ def load_image(path: str, load_type: str = "unchanged"):
     return image
 
 
-# Just easier this way, I have to look them up every time otherwise
-cv2_rotate_map = {
-    0: None,
-    90: _cv2.ROTATE_90_CLOCKWISE,
-    -90: _cv2.ROTATE_90_COUNTERCLOCKWISE,
-    180: _cv2.ROTATE_180,
-    -180: _cv2.ROTATE_180,
-    -270: _cv2.ROTATE_90_CLOCKWISE,
-    270: _cv2.ROTATE_90_COUNTERCLOCKWISE
-}
-
-
 # Add unit tests
 def rotate_image(img: _np.ndarray, rotate_angle: int):
     """ 
@@ -409,6 +396,18 @@ def rotate_image(img: _np.ndarray, rotate_angle: int):
     @param img: Images of type np.ndarray
     @param rotate_angle: Degrees `img` is rotated by. must be within [0, 90, -90, 180, -180, -270, 270]
     """
+
+    # Mapping between angles in degrees and cv2 angle constants.
+    cv2_rotate_map = {
+        0: None,
+        90: _cv2.ROTATE_90_CLOCKWISE,
+        -90: _cv2.ROTATE_90_COUNTERCLOCKWISE,
+        180: _cv2.ROTATE_180,
+        -180: _cv2.ROTATE_180,
+        -270: _cv2.ROTATE_90_CLOCKWISE,
+        270: _cv2.ROTATE_90_COUNTERCLOCKWISE,
+        360: None
+    }
 
     # Checks
     _type_check.assert_types([img, rotate_angle], [_np.ndarray, int])
@@ -583,9 +582,11 @@ def gamma_correction(image:_np.ndarray, gamma: float = 1.5):
     Perform gamma correction.
 
     @param image: image in np.ndarray format
-    @param gamma: Essentially adjusting the brightness.
-                  gamma < 1.0 -> brighter and gamma > 1.0 -> darker
+    @param gamma: Essentially adjusting the brightness. Gamma < 1.0 -> brighter and gamma > 1.0 -> darker
     """
+    # Checks
+    _type_check.assert_types([image, gamma], [_np.ndarray, float])
+
     table = [((i / 255.0) ** gamma) * 255 for i in _np.arange(0, 256)]
     table_right_format = _np.array(table).astype("uint8")
     return _cv2.LUT(image, table_right_format)
@@ -606,7 +607,6 @@ __all__ = [
     "cv2_sobel_edge_detection",
     "cv2_draw_bounding_boxes",
     "load_image",
-    "cv2_rotate_map",
     "rotate_image",
     "Cv2Webcam",
     "ndarray_bgr2rgb",
