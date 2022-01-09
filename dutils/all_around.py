@@ -148,7 +148,7 @@ def confusion_matrix_binary(targets:_np.ndarray, preds:_np.ndarray, plot:bool=Tr
     EXAMPLE:
     >> t = np.array([1,0,1,0,0,0,1,0,0,1,1,0])
     >> p = np.array([1,0,1,1,0,1,1,0,1,0,0,1])
-    >> U.experimental.confusion_matrix_binary(t,p)
+    >> U.all_around.confusion_matrix_binary(t,p)
 
     @param targets: A np.ndarray containing the real values
     @param preds: A np.ndarray containing the prediction values

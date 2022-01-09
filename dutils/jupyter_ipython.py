@@ -8,6 +8,7 @@ import numpy as _np
 import requests as _requests
 import validators as _validators
 from rectpack import newPacker as _newPacker
+import warnings as _warnings
 
 from . import type_check as _type_check
 from . import input_output as _input_output
@@ -93,8 +94,8 @@ def _get_mosaic_image(images:_np.ndarray, allow_rotations:bool=False):
 
     # Setup
     rectangles = [(s.shape[0], s.shape[1], i) for i, s in enumerate(images)]
-    height_domain = [int(1080 * 4 / 1.05 ** i) for i in range(50, 0, -1)]
-    width_domain = [int(1920 * 4 / 1.05 ** i) for i in range(50, 0, -1)]
+    height_domain = [int(1080 * 5 / 1.05 ** i) for i in range(50, 0, -1)]
+    width_domain = [int(1920 * 5 / 1.05 ** i) for i in range(50, 0, -1)]
     canvas_dims = list(zip(height_domain, width_domain))
     canvas_image = None
 
@@ -112,7 +113,7 @@ def _get_mosaic_image(images:_np.ndarray, allow_rotations:bool=False):
             continue
 
         # Setup
-        canvas_image = _np.zeros((canvas_dim[0], canvas_dim[1], 3)).astype(_np.uint8)
+        canvas_image = _np.zeros((canvas_dim[0], canvas_dim[1], 3)).astype(_np.uint8) + 64 # 64 seems to be a pretty versatile grey color
         H = canvas_image.shape[0]
 
 
@@ -200,10 +201,20 @@ def show_image(source, resize_factor: float = 1.0, BGR2RGB: bool = None):
     if type(source) not in [list, tuple]:
         final_image = _get_image(source, resize_factor, BGR2RGB)
     else:
+        if len(source) > 200: # Anything above 200 indexes seems unnecessary
+            _warnings.warn(
+                f"Received `{len(source)}` images, the maximum limit is 200. "
+                "Will pick 200 random images from `source` for display and discard the rest"
+            )
+            random_indexes_200 = _np.random.choice(_np.arange(len(source)), 200)
+            source = [source[i] for i in random_indexes_200]
+
         images = [_get_image(image, resize_factor, BGR2RGB) for image in source]
         final_image = _get_mosaic_image(images, allow_rotations=False)
 
+    # Resize the final image to 1920x1080 and display it
     final_image = _Image.fromarray(final_image)
+    final_image = final_image.resize((1920, 1080), resample=0, box=None)
     display(final_image)
 
 

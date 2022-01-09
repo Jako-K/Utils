@@ -8,7 +8,6 @@ Example:
 ['#c51cbe', '#0dc76a']
 """
 
-
 import re as _re
 import random as _random
 from PIL import ImageColor as _ImageColor

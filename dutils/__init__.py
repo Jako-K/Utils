@@ -1,6 +1,6 @@
 """
 DESCRIPTION:
-A bunch of modules with helper functions and alike.
+A bunch of modules with helper functions.
 NOTE: `dutils.search("what_you_want_to_search_for")` can help you find what you are looking for
 
 EXAMPLE:
@@ -78,11 +78,12 @@ def search(name:str):
 
 # input_output:
 #   * @param to all functions
+#   * a `rename_file` function
 
 # type_checks:
 #   * Add a is_list_like function: which would for instance accept both: list, tuples, np.ndarray etc.
 #     but not something like a string even though it has __iter__
-#   * This is confusing: assert_comparison_number(rows, 1, ">=", "rows") change to order to: (rows, ">=", 1, "rows")
+#   * This is confusing: assert_comparison_number(rows, 1, ">=", "rows") change order to: (rows, ">=", 1, "rows")
 
 
 # Unit tests:

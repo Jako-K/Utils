@@ -274,6 +274,21 @@ class _Templates:
         self._print(string)
 
 
+    def timm_models(self):
+        string = \
+            """
+            import timm, torch
+            
+            # Search for model name
+            # all_model_names = timm.list_models(pretrained=True)
+            # [model_name for model_name in all_model_names if "resnet18" in model_name]
+            
+            model = timm.create_model("resnet18", pretrained=True)
+            model.fc = torch.nn.Linear(512, ??)
+            """
+        self._print(string)
+
+
     def config_file(self, on_kaggle=False):
         login = \
             """

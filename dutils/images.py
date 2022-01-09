@@ -326,7 +326,7 @@ def cv2_draw_bounding_boxes(image: _np.ndarray, p1: tuple, p2: tuple, label: str
     if not ((0 < p1[0] <= w) and (0 < p2[0] <= w) and (0 < p2[1] <= h) and (0 < p2[1] <= h)):
         raise ValueError("BB coordinates `p1` and `p2` violate image width/height and/or are <= 0")
 
-    ## Check image an color
+    ## Check image and color
     assert_ndarray_image(image)
     if color is not None:
         color = _colors.convert_color(color, "rgb")
@@ -554,7 +554,7 @@ def show_hist(image:_np.ndarray):
 
 
 def histogram_stretching(image:_np.ndarray, min_vd:int=0, max_vd:int=255):
-
+    # TODO: Write docstring
     # Checks
     _type_check.assert_types([image, min_vd, max_vd], [_np.ndarray, int, int])
     assert_ndarray_image(image)

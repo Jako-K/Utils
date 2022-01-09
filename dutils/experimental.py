@@ -1,6 +1,6 @@
 """
 Description
-Stuff that hasen't been tested yet or that I'm on the fence about
+Stuff that hasn't been tested yet or that I'm on the fence about
 """
 
 import torch as _torch
@@ -13,6 +13,7 @@ from sklearn.model_selection import StratifiedKFold as _StratifiedKFold
 from torch.utils.data import DataLoader as _DataLoader
 import pydicom as _dicom
 import cv2 as _cv2
+import os as _os
 
 from . import colors as _colors
 from . import input_output as _input_output
@@ -31,14 +32,17 @@ def load_dicom(path:str):
 
     return _dicom.dcmread(path).pixel_array
 
+
 def show_dicom(path:str):
     dicom_image = load_dicom(path)
     _plt.imshow(dicom_image, cmap="bone")
     _plt.axis("off")
 
+
 def show_dicom_ndarray(dicom_image):
     _plt.imshow(dicom_image, cmap="bone")
     _plt.axis("off")
+
 
 def load_unspecified(path:str):
     """
@@ -222,6 +226,85 @@ def get_module_version(module_name:str):
     return _pkg_resources.get_distribution(module_name).version
 
 
+def video_to_images(video_path: str, image_folder_path: str) -> None:
+    """
+    Break a video down into individual frames and save them to disk.
+
+    EXAMPLE:
+    >> video_to_images("./video_in.MP4", "./frames_folder")
+
+    @param video_path: Load path to video for processing. Must be ".mp4" or ".avi"
+    @param image_folder_path: Path to folder where the frames are to be saved
+    @return: None
+    """
+
+    # Checks
+    _type_check.assert_types(to_check=[video_path, image_folder_path], expected_types=[str, str])
+    _input_output.path_exists(video_path)
+    _input_output.path_exists(image_folder_path)
+    _type_check.assert_in(_input_output.get_file_extension(video_path).lower(), [".mp4", ".avi"])
+
+    # Extract and save individual frames
+    cap = _cv2.VideoCapture(video_path)
+    frame_i = -1
+    while cap.isOpened():
+        frame_i += 1
+        video_feed_active, frame = cap.read()
+
+        if not video_feed_active:
+            cap.release()
+            _cv2.destroyAllWindows()
+            break
+
+        # Save frame
+        save_path = _os.path.join(image_folder_path, str(frame_i)) + ".jpg"
+        successful_save = _cv2.imwrite(save_path, frame)
+        if not successful_save:
+            raise RuntimeError(f"Failed to save frame {frame_i}, cause unknown")
+
+
+def IoU_score(p1:list, p2:list) -> float:
+    """
+    Calculates the intersection over union (IoU) between the two bounding boxes `p1` and `p2`
+
+    @param p1: Bounding box list: [up_left_x, up_left_y, low_right_x, low_right_y]
+    @param p2: Bounding box list: [up_left_x, up_left_y, low_right_x, low_right_y]
+    @return: IoU score
+    """
+
+    x1_hat, y1_hat, x2_hat, y2_hat = p1
+    x1, y1, x2, y2 = p2
+
+    dx1 = x1_hat - x1
+    dy1 = y1_hat - y1
+    dx2 = x2_hat - x2
+    dy2 = y2_hat - y2
+    w = abs(x1_hat-x2_hat)
+    h = abs(y1_hat-y2_hat)
+
+    ix1 = max(x1, x1_hat) #if x1_hat <= x2 else None
+    iy1 = max(y1, y1_hat) #if y1_hat <= y2 else None
+
+    dx2 = x2_hat - x2
+    dy2 = y2_hat - y2
+    ix2 = min(x2, x2_hat) #if x2_hat >= x1 else None
+    iy2 = min(y2, y2_hat) #if y2_hat >= y1 else None
+
+    print(ix1, iy1, ix2, iy2)
+    if None in [ix1, iy1, ix2, iy2]:
+        return 0,0,0,0
+
+    return ix1, iy1, ix2, iy2
+
+
+def get_test_image(load_type:str="unchanged"):
+    dutils_path = _os.path.dirname(__file__)
+    image_path = _os.path.join(dutils_path, "_unit_tests/dragon.jpg")
+    return _images.load_image(image_path, load_type)
+
+
+
+
 # import scipy.io
 # --> mat = scipy.io.loadmat('file.mat')
 
@@ -276,7 +359,8 @@ __all__ = [
     "DataLoaderDevice",
     "preprocess_video",
     "get_module_version",
-    "normal_dist"
+    "normal_dist",
+    "get_test_image"
 ]
 
 
