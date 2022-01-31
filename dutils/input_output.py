@@ -256,7 +256,7 @@ def is_file(path: str, extension: str = None):
     is_ok = _os.path.isfile(path)
     if extension is not None:
         if extension.find(".") == -1:
-            raise ValueError("Expected `extension` to have at least one `.` but recieved zero.")
+            raise ValueError("Expected `extension` to have at least one `.` but received zero.")
         extension_ok = get_file_extension(path) == extension
         is_ok = is_ok and extension_ok
 
@@ -327,6 +327,42 @@ def get_line_counts_folder(folder_path: str, only_extension: str = None, exclude
     return sum(line_counts.values()), line_counts
 
 
+def get_file_size(path:str, size_prefix:str="m", as_string:bool=True, SI_unit:bool=False):
+    """
+    Return file size at `path` prefixed by `size_prefix`. `as_string` adds size prefix e.g. megabyte
+    NOTE: Windows uses the "binary" prefix for storage. This means 1 Kilobyte is 2^10 bytes, instead of the normal SI Kilo (10^3).
+
+    EXAMPLE:
+    >> get_file_size("../my_folder_path/my_file_name.extension", "g", as_string=True)
+    '1.185318 gb'
+
+    @param path: Path to a file. NOTE: only files are accepted, passing a folder path will cause an error
+    @param size_prefix: Specify the size format. Accepted values: [None, "k", "m", "g"] -> None=Byte, "k"="KiloByte" ..
+    @param as_string: Convert the file size to a string and adds the prefix e.g. 1024.0 -> "1.0 kb"
+    @param SI_unit: Use SI-units (e.g. kilo=10^3) to prefix bytes if true. If false, the "binary" equivalent is used (e.g. kilo=1024)
+    @return: file size in string with units or as a simple float
+    """
+
+    # Checks
+    _type_check.assert_types([path, as_string, SI_unit], [str, bool, bool])
+    _type_check.assert_in(size_prefix, [None, "k", "m", "g"])
+    assert_path(path)
+    if not is_file(path): raise ValueError("`path` most point to a file")
+
+    # Calculate the actual size of the file
+    kilo = 1000 if SI_unit else 1024
+    prefix_numeric = {None:1, "k": kilo**1, "m": kilo**2, "g": kilo**3}[size_prefix]
+    rounding_amount = {None: 0, "k": 1, "m": 3, "g": 6}[size_prefix]
+    file_size = round(_os.path.getsize(path) / prefix_numeric, rounding_amount)
+
+    # The formatting add units according to inputs e.g. file_size = 123000 -> "120.11 kiB"
+    # NOTE: as far as i can tell, the consensus around capital letters is: KiB=1024 and kB=1000.
+    if SI_unit:
+        return f"{file_size} {size_prefix if size_prefix else ''}B" if as_string else file_size
+    else:
+        return f"{file_size} {size_prefix.upper() if size_prefix else ''}iB" if as_string else file_size
+
+
 __all__ = [
     "assert_path",
     "assert_path_dont_exists",
@@ -350,6 +386,7 @@ __all__ = [
     "remove_file",
     "get_line_count_file",
     "get_line_counts_folder",
+    "get_file_size"
 ]
 
 

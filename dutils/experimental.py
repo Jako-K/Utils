@@ -2,7 +2,7 @@
 Description
 Stuff that hasn't been tested yet or that I'm on the fence about
 """
-
+import torch
 import torch as _torch
 import numpy as _np
 import warnings as _warnings
@@ -15,11 +15,15 @@ import pydicom as _dicom
 import cv2 as _cv2
 import os as _os
 
+import time as _time
+import re as _re
+
 from . import colors as _colors
 from . import input_output as _input_output
 from . import type_check as _type_check
 from . import images as _images
 from . import pytorch as _pytorch
+from . import system_info as _system_info
 
 import pkg_resources as _pkg_resources
 
@@ -151,72 +155,6 @@ class DataLoaderDevice:
             yield self._to_device_preprocess(b)
 
 
-def preprocess_video(load_path:str, save_path:str, save_every_nth_frame:int=3, scale_factor:float = 0.5,
-                     rotate_angle:int=0, fps_out:int=10, extra_apply:_type_check.FunctionType=None):
-    """
-    Load video located at `load_path` for processing: Reduce FPS by `save_every_nth_frame`,
-    resize resolution by `scale_factor` and clockwise rotation by `rotate_angle` .
-    The modified video is saved at `save_path` with a FPS of `fps_out`
-    NOTE: The frames used to reconstruct the video is kept in memory during processing, which may be problematic for larger videos
-
-    EXAMPLE:
-    >> preprocess_video("video_in.avi", "video_out.mp4", 10, 0.35, -90, 10)
-
-    @param load_path: Load path to video for processing. Must be ".mp4" or ".avi"
-    @param save_path: Save path to processed video. Must be ".mp4" or ".avi"
-    @param save_every_nth_frame: Essentially a downscaling factor e.g. 3 would result in a video containing 1/3 of the frames
-    @param scale_factor: Determine the image size e.g. 0.25 would decrease the resolution by 75%
-    @param rotate_angle: Clockwise rotation of the image. must be within [0, 90, -90, 180, -180, -270, 270]
-    @param fps_out: The frame rate of the processed video which is saved at `save_path`
-    @param extra_apply: and extra function which can be applied to the image at the very end e.g. for cropping, noise etc.
-    @return: None
-    """
-
-    # Checks
-    _type_check.assert_types(
-        to_check=[load_path, save_path, save_every_nth_frame, scale_factor, rotate_angle, fps_out],
-        expected_types=[str, str, int, float, int, int]
-    )
-    _input_output.path_exists(load_path)
-    legal_formats = [".mp4", ".avi"]
-    _type_check.assert_in(_input_output.get_file_extension(load_path).lower(), legal_formats)
-    _type_check.assert_in(_input_output.get_file_extension(save_path).lower(), legal_formats)
-    
-    # Setup
-    temp_images = []
-    cap = _cv2.VideoCapture(load_path)
-    frame_i = -1
-
-    # Prepare all frames for modified video
-    while cap.isOpened():
-        frame_i += 1
-        video_feed_active, frame = cap.read()
-
-        if not video_feed_active:
-            cap.release()
-            _cv2.destroyAllWindows()
-            break
-
-        if frame_i%save_every_nth_frame != 0: # Only process every n'th frame.
-            continue
-            
-        resized = _images.ndarray_resize_image(frame, scale_factor)
-        rotated = _images.rotate_image(resized, rotate_angle)
-        final = rotated if extra_apply is None else extra_apply(rotated)
-        temp_images.append(final)
-
-
-    # Combine processed frames to video
-    height, width, _ = temp_images[0].shape
-    video = _cv2.VideoWriter(save_path, 0, fps_out, (width,height))
-
-    for image in temp_images:
-        video.write(image)
-
-    _cv2.destroyAllWindows()
-    video.release()
-
-
 def normal_dist(x , mu , std):
     return  1/(std*_np.sqrt(2*_np.pi)) * _np.exp(-0.5 * ((x - mu)/std)**2)
 
@@ -226,127 +164,18 @@ def get_module_version(module_name:str):
     return _pkg_resources.get_distribution(module_name).version
 
 
-def video_to_images(video_path: str, image_folder_path: str) -> None:
-    """
-    Break a video down into individual frames and save them to disk.
+def get_test_image(load_type:str="unchanged", as_tensor:bool=False):
+    # checks
+    _type_check.assert_types([load_type, as_tensor], [str, bool])
 
-    EXAMPLE:
-    >> video_to_images("./video_in.MP4", "./frames_folder")
-
-    @param video_path: Load path to video for processing. Must be ".mp4" or ".avi"
-    @param image_folder_path: Path to folder where the frames are to be saved
-    @return: None
-    """
-
-    # Checks
-    _type_check.assert_types(to_check=[video_path, image_folder_path], expected_types=[str, str])
-    _input_output.path_exists(video_path)
-    _input_output.path_exists(image_folder_path)
-    _type_check.assert_in(_input_output.get_file_extension(video_path).lower(), [".mp4", ".avi"])
-
-    # Extract and save individual frames
-    cap = _cv2.VideoCapture(video_path)
-    frame_i = -1
-    while cap.isOpened():
-        frame_i += 1
-        video_feed_active, frame = cap.read()
-
-        if not video_feed_active:
-            cap.release()
-            _cv2.destroyAllWindows()
-            break
-
-        # Save frame
-        save_path = _os.path.join(image_folder_path, str(frame_i)) + ".jpg"
-        successful_save = _cv2.imwrite(save_path, frame)
-        if not successful_save:
-            raise RuntimeError(f"Failed to save frame {frame_i}, cause unknown")
-
-
-def IoU_score(p1:list, p2:list) -> float:
-    """
-    Calculates the intersection over union (IoU) between the two bounding boxes `p1` and `p2`
-
-    @param p1: Bounding box list: [up_left_x, up_left_y, low_right_x, low_right_y]
-    @param p2: Bounding box list: [up_left_x, up_left_y, low_right_x, low_right_y]
-    @return: IoU score
-    """
-
-    x1_hat, y1_hat, x2_hat, y2_hat = p1
-    x1, y1, x2, y2 = p2
-
-    dx1 = x1_hat - x1
-    dy1 = y1_hat - y1
-    dx2 = x2_hat - x2
-    dy2 = y2_hat - y2
-    w = abs(x1_hat-x2_hat)
-    h = abs(y1_hat-y2_hat)
-
-    ix1 = max(x1, x1_hat) #if x1_hat <= x2 else None
-    iy1 = max(y1, y1_hat) #if y1_hat <= y2 else None
-
-    dx2 = x2_hat - x2
-    dy2 = y2_hat - y2
-    ix2 = min(x2, x2_hat) #if x2_hat >= x1 else None
-    iy2 = min(y2, y2_hat) #if y2_hat >= y1 else None
-
-    print(ix1, iy1, ix2, iy2)
-    if None in [ix1, iy1, ix2, iy2]:
-        return 0,0,0,0
-
-    return ix1, iy1, ix2, iy2
-
-
-def get_test_image(load_type:str="unchanged"):
     dutils_path = _os.path.dirname(__file__)
     image_path = _os.path.join(dutils_path, "_unit_tests/dragon.jpg")
-    return _images.load_image(image_path, load_type)
+    image = _images.load_image(image_path, load_type="RGB" if as_tensor else "unchanged")
+    return _torch.tensor(image).permute(2,0,1) if as_tensor else image
 
 
-
-
-# import scipy.io
-# --> mat = scipy.io.loadmat('file.mat')
-
-
-# CV_RGB2HLS
-"""
-import cv2
-import numpy as np
-
-img = cv2.imread('messi5.jpg')
-gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-img_gaussian = cv2.GaussianBlur(gray,(3,3),0)
-
-#canny
-img_canny = cv2.Canny(img,100,200)
-
-#sobel
-img_sobelx = cv2.Sobel(img_gaussian,cv2.CV_8U,1,0,ksize=5)
-img_sobely = cv2.Sobel(img_gaussian,cv2.CV_8U,0,1,ksize=5)
-img_sobel = img_sobelx + img_sobely
-
-
-#prewitt
-kernelx = np.array([[1,1,1],[0,0,0],[-1,-1,-1]])
-kernely = np.array([[-1,0,1],[-1,0,1],[-1,0,1]])
-img_prewittx = cv2.filter2D(img_gaussian, -1, kernelx)
-img_prewitty = cv2.filter2D(img_gaussian, -1, kernely)
-
-
-cv2.imshow("Original Image", img)
-cv2.imshow("Canny", img_canny)
-cv2.imshow("Sobel X", img_sobelx)
-cv2.imshow("Sobel Y", img_sobely)
-cv2.imshow("Sobel", img_sobel)
-cv2.imshow("Prewitt X", img_prewittx)
-cv2.imshow("Prewitt Y", img_prewitty)
-cv2.imshow("Prewitt", img_prewittx + img_prewitty)
-
-
-cv2.waitKey(0)
-cv2.destroyAllWindows()
-"""
+def turn_off_numpy_scientific():
+    _np.set_printoptions(suppress=True)
 
 
 __all__ = [
@@ -357,10 +186,10 @@ __all__ = [
     "bucket_continuous_feature",
     "stratified_folds",
     "DataLoaderDevice",
-    "preprocess_video",
     "get_module_version",
     "normal_dist",
-    "get_test_image"
+    "get_test_image",
+    "turn_off_numpy_scientific"
 ]
 
 

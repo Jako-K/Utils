@@ -78,7 +78,6 @@ def search(name:str):
 
 # input_output:
 #   * @param to all functions
-#   * a `rename_file` function
 
 # type_checks:
 #   * Add a is_list_like function: which would for instance accept both: list, tuples, np.ndarray etc.
