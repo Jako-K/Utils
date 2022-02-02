@@ -40,7 +40,7 @@ def pandas_standardize_df(df:_pd.DataFrame):
 def get_grid_coordinates(rows: int, cols: int):
     """
     # Function description
-    Calculate 2D coordinates for grid traversing. If unclear, the example below should alleviate any doubt
+    Calculate 2D coordinates for grid traversing.
 
     Example:
     >> get_grid_coordinates(3,2)
@@ -69,7 +69,7 @@ def sturges_rule(data):
     >> sturges_rule([1,2,3,4])
     (1.004420127756955, 3)
     """
-    # NOTE Not sure about the intuition for the method or even how well it works, but
+    # NOTE Don't understand the motivation behind the method or even how well it works, but
     # it seems like a reasonable way of picking bin sizes (and therefore #bins)
 
     try:

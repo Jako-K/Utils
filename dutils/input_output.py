@@ -13,8 +13,11 @@ import json as _json
 from glob import glob as _glob
 import pickle as _pickle
 import shutil as _shutil
+import re as _re
 
 from . import type_check as _type_check
+from . import system_info as _system_info
+
 
 
 def assert_path(path:str):
@@ -271,7 +274,7 @@ def remove_file(path: str):
     assert_path(path)
     if not is_file(path):
         if is_folder(path):
-            raise ValueError("`path` is intepreted as a folder, not a file")
+            raise ValueError("`path` is interpreted as a folder, not a file")
         else:
             raise ValueError("`path` is not recognized as a file")
     _os.remove(path)
@@ -302,7 +305,7 @@ def get_line_counts_folder(folder_path: str, only_extension: str = None, exclude
     NOTE: Ignore every file within `folder_path` which is not recognized as a file.
 
     @param folder_path: path to the folder
-    @param only_extension: only inclues file with that extension name
+    @param only_extension: only includes file with that extension name
     @param exclude_empty_lines: Don't count empty lines
     @param return: Total number of lines within `folder_path` and
                    a dict of filenames with their corresponding line count.
@@ -312,10 +315,10 @@ def get_line_counts_folder(folder_path: str, only_extension: str = None, exclude
     _type_check.assert_types(
         [folder_path, only_extension, exclude_empty_lines], [str, str, bool], [0, 1, 0])
     if not is_folder(folder_path):
-        raise ValueError(f"Expected `folder_path` to be a folder, but recieved "
+        raise ValueError(f"Expected `folder_path` to be a folder, but received "
                          f"{'a file' if is_file(folder_path) else 'something else'}")
     if (only_extension is not None) and ("." not in only_extension):
-        raise ValueError("Expected `only_extension` to have at least one `.` but recieved 0")
+        raise ValueError("Expected `only_extension` to have at least one `.` but received 0")
 
     line_counts = {}
     glob_path = _os.path.join(folder_path, f"*{only_extension if only_extension else ''}")
@@ -362,6 +365,114 @@ def get_file_size(path:str, size_prefix:str="m", as_string:bool=True, SI_unit:bo
     else:
         return f"{file_size} {size_prefix.upper() if size_prefix else ''}iB" if as_string else file_size
 
+# TODO Unit tests
+def search_file(file_path: str, search_query: str, lazy_search: bool = False, regex_flag: _re.RegexFlag = 0) -> dict:
+    """
+    Search `file_path` for regex expression `search_query` and
+    return all occurrences with their corresponding line number.
+    if `lazy_search` is True, only the first occurrence is returned.
+    NOTE: No checks is performed to ensure unicode compatible. This
+          means that "image.png" will throw a UnicodeDecodeError
+
+    EXAMPLE:
+    >> search_file(file_path, "something", True, regex_flag=re.IGNORECASE)
+    {6: 'something'}
+
+    @param file_path: path to file (this cannot be a folder)
+    @param search_query: regex expression used for search in `file_path`
+    @param lazy_search: If true, only the first occurrence is returned.
+    @param regex_flag: Add functionality e.g. `re.IGNORECASE` (has enum value 2)
+    @return: dict with line numbers as keys and string matches as values
+    """
+
+    # Checks
+    _type_check.assert_types([file_path, search_query, lazy_search, regex_flag], [str, str, bool, int])
+    if not is_file(file_path):
+        raise ValueError("`file_path` is not a file. Did you perhaps pass a folder?")
+    if search_query == "":
+        raise ValueError("Received an empty `search_query`.")
+
+    # Setup
+    file_str = read_file(file_path)
+    findings = {}
+
+    # Stop after finding the first occurrences of `search_query`
+    if lazy_search:
+        matched = _re.search(search_query, file_str, flags=regex_flag)
+        if not matched: return findings
+        start, end = matched.span()
+        line_number = len(_re.findall(r"\n", file_str[:start])) + 1
+        findings[line_number] = file_str[start: end]
+        return findings
+
+    # Find all occurrences of `search_query`findings = {}
+    for match in _re.finditer(search_query, file_str, flags=regex_flag):
+        if not match: break
+        start, end = match.span()
+        line_number = len(_re.findall(r"\n", file_str[:start])) + 1
+        findings[line_number] = file_str[start: end]
+
+    return findings
+
+# TODO Unit tests
+def search_folder(folder_path: str, search_query: str, lazy_search: bool = False, regex_flag: _re.RegexFlag = 0):
+    """
+    Search all readable files in `folder_path` for regex expression `search_query` and
+    return all occurrences for each file. if `lazy_search` is True, only the first occurrence
+    in each file is returned.
+
+    # EXAMPLE
+    >> U.experimental.search_folder("./yolov3/", "Mosaic")
+    {'./yolov3/detect.py': {43: 'IOU'}}
+
+    @param folder_path: path to folder
+    @param search_query: regex expression used for search in `folder_path`
+    @param lazy_search: If true, only the first occurrence for is file is returned.
+    @param regex_flag: Add functionality e.g. `re.IGNORECASE` (has enum value 2)
+    @return: dict with line numbers as keys and string matches as values
+    """
+
+    # Checks
+    _type_check.assert_types([folder_path, search_query, lazy_search, regex_flag], [str, str, bool, int])
+    if not is_folder(folder_path):
+        raise ValueError("`folder_path` is not a folder. Did you perhaps pass a file?")
+    if search_query == "":
+        raise ValueError("Received an empty `search_query`")
+
+    # Recursively extract all paths in the folder
+    file_paths = _glob(_os.path.join(folder_path, "**", "*.*"), recursive=True)
+    if _system_info.on_windows(): file_paths = [p.replace("\\", "/") for p in
+                                                file_paths]  # Avoid Windows' backslash in paths
+
+    # Seems like the most reasonable thing to do if there's no files in the received folder
+    if not any([is_file(p) for p in file_paths]):
+        raise ValueError("`folder_path` contains 0 files")
+
+    # Search each readable file for `search_query`
+    findings = {}
+    exclude_extensions = [".exe"] + audio_formats + compression_formats + video_formats + image_formats
+    for path in file_paths:
+        # try and exclude non-unicode files (e.g. ".MP4"), but wrap in a try/except to be sure
+        if get_file_extension(path).lower() in exclude_extensions: continue
+        try:
+            findings[path] = search_file(path, search_query, lazy_search, regex_flag)
+        except UnicodeDecodeError:
+            pass
+
+    # Remove all paths without any matches and return it
+    return {k: v for (k, v) in findings.items() if v}
+
+
+
+
+image_formats = ['.png', '.jpg', '.jpeg', '.jpeg2000', '.tiff', '.bmp', '.gif', '.raw', '.psd', '.cr2']
+video_formats = ['.mp4', '.mov', '.avi', '.flv', '.mkv', '.wmv', '.avchd', '.webm', '.h.264', '.mpeg-4']
+audio_formats = ['.3ga', '.aac', '.aiff', '.amr', '.ape', '.arf', '.asf', '.asx', '.cda', '.dvf', '.flac', '.gp4', '.gp5',
+                 '.gpx', '.logic', '.m4a', '.m4b', '.m4p', '.midi', '.mp3', '.ogg', '.opus', '.pcm', '.rec', '.snd', '.sng',
+                 '.uax', '.wav', '.wma', '.wpl', '.zab']
+compression_formats = ['.7z', '.arj', '.bin', '.bzip', '.bzip2', '.cab', '.cpio', '.deb', '.eargz', '.hqx', '.jar', '.lha',
+                       '.rar', '.rpm', '.sea', '.sit', '.tar', '.war', '.zip']
+
 
 __all__ = [
     "assert_path",
@@ -386,7 +497,13 @@ __all__ = [
     "remove_file",
     "get_line_count_file",
     "get_line_counts_folder",
-    "get_file_size"
+    "get_file_size",
+    "image_formats",
+    "video_formats",
+    "search_folder",
+    "audio_formats",
+    "compression_formats",
+    "search_file"
 ]
 
 

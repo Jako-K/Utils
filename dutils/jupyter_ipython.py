@@ -97,7 +97,7 @@ def _get_collage_image(images:list, allow_rotations:bool=False):
     # A lot of the complexity is removed if all the images are of the same size. Which means a simpler method can be used
     if all([images[0].shape == image.shape for image in images]):
         cols, rows, resize_factor, _ = _get_grid_parameters(images)
-        return get_grid_image(images, cols, rows, resize_factor)
+        return _get_grid_image(images, cols, rows, resize_factor)
 
     # Setup
     rectangles = [(s.shape[0], s.shape[1], i) for i, s in enumerate(images)]
@@ -190,7 +190,7 @@ def _get_grid_parameters(images, max_height=1080, max_width=1920, desired_ratio=
     return cols, rows, scaling_factor, loss_info
 
 
-def get_grid_image(images:list, cols:int, rows:int, resize_factor:float):
+def _get_grid_image(images:list, cols:int, rows:int, resize_factor:float):
     """
     Put a list of np.ndarray images into a single combined image.
     NOTE: This function is only intended to be used by `show_image()`
