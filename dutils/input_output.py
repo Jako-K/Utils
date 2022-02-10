@@ -415,7 +415,7 @@ def search_file(file_path: str, search_query: str, lazy_search: bool = False, re
     return findings
 
 # TODO Unit tests
-def search_folder(folder_path: str, search_query: str, lazy_search: bool = False, regex_flag: _re.RegexFlag = 0):
+def search_folder(folder_path: str, search_query: str, lazy_search: bool = True, regex_flag: _re.RegexFlag = 0):
     """
     Search all readable files in `folder_path` for regex expression `search_query` and
     return all occurrences for each file. if `lazy_search` is True, only the first occurrence
@@ -441,8 +441,7 @@ def search_folder(folder_path: str, search_query: str, lazy_search: bool = False
 
     # Recursively extract all paths in the folder
     file_paths = _glob(_os.path.join(folder_path, "**", "*.*"), recursive=True)
-    if _system_info.on_windows(): file_paths = [p.replace("\\", "/") for p in
-                                                file_paths]  # Avoid Windows' backslash in paths
+    if _system_info.on_windows(): file_paths = [p.replace("\\", "/") for p in file_paths]  # Avoid Windows' backslash in paths
 
     # Seems like the most reasonable thing to do if there's no files in the received folder
     if not any([is_file(p) for p in file_paths]):
@@ -459,8 +458,10 @@ def search_folder(folder_path: str, search_query: str, lazy_search: bool = False
         except UnicodeDecodeError:
             pass
 
-    # Remove all paths without any matches and return it
-    return {k: v for (k, v) in findings.items() if v}
+    # Remove all paths without any matches, convert to absolute paths, replace backslashes and return
+    if _system_info.on_windows():
+        return {_os.path.abspath(k).replace("\\", "/"): v for (k, v) in findings.items() if v}
+    return {_os.path.abspath(k): v for (k, v) in findings.items() if v}
 
 
 

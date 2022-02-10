@@ -12,7 +12,6 @@ FunctionType = type(lambda : None)
 # General
 def assert_type(to_check, expected_type, allow_none:bool=False):
     """
-    Function description:
     Check object against expected type
 
     @param to_check: Object for type check
@@ -36,7 +35,6 @@ def assert_type(to_check, expected_type, allow_none:bool=False):
 
 def assert_types(to_check:list, expected_types:list, allow_nones:list=None):
     """
-    Function description:
     Check list of values against expected types
 
     @param to_check: List of values for type check
@@ -68,7 +66,6 @@ def assert_types(to_check:list, expected_types:list, allow_nones:list=None):
 
 def assert_list_slow(to_check:list, expected_type, expected_length:int=None, allow_none:bool=False):
     """
-    Function description:
     Check the values of `to_check` against `expected_type` and `expected_length`.
 
     @param to_check: List of values for type check
@@ -94,7 +91,6 @@ def assert_list_slow(to_check:list, expected_type, expected_length:int=None, all
 
 def assert_in(to_check, check_in):
     """
-    Function description:
     Check if the value `to_check` is present in `check_in`
 
     @param to_check: Value to be checked
@@ -111,10 +107,9 @@ def assert_in(to_check, check_in):
 
 def assert_comparison_number(number, check_against, comparison:str, number_name:str):
     """
-    Function description:
     Check if `number` compare correctly against `check_against`
 
-    Example:
+    EXAMPLE:
     >> assert_comparison_number(3, 0, "<=", "number_of_cats")
     ValueError(...)
     >> assert_comparison_number(3, 0, ">=", "number_of_cats")

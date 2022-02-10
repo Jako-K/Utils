@@ -120,7 +120,7 @@ def _get_collage_image(images:list, allow_rotations:bool=False):
             continue
 
         # Setup
-        canvas_image = _np.zeros((canvas_dim[0], canvas_dim[1], 3)).astype(_np.uint8) + 64 # 64 seems to be a pretty versatile grey color
+        canvas_image = _np.zeros((canvas_dim[0], canvas_dim[1], 3)).astype(_np.uint8) + 67 # 67 seems to be a pretty versatile grey color
         H = canvas_image.shape[0]
 
 
@@ -190,7 +190,7 @@ def _get_grid_parameters(images, max_height=1080, max_width=1920, desired_ratio=
     return cols, rows, scaling_factor, loss_info
 
 
-def _get_grid_image(images:list, cols:int, rows:int, resize_factor:float):
+def _get_grid_image(images:list, cols:int, rows:int, resize_factor:float=1.0):
     """
     Put a list of np.ndarray images into a single combined image.
     NOTE: This function is only intended to be used by `show_image()`
@@ -209,8 +209,8 @@ def _get_grid_image(images:list, cols:int, rows:int, resize_factor:float):
     canvas = canvas.astype(_np.uint8)
 
     image_index = -1
-    for row in range(rows):
-        for col in range(cols):
+    for col in range(cols):
+        for row in range(rows):
             image_index += 1
             if image_index >= len(images): break
 
@@ -340,7 +340,7 @@ def show_image(source, resize_factor:float=1.0, BGR2RGB:bool=None, return_image:
     # Display and return image
     final_image = _Image.fromarray(final_image)
     display(final_image)
-    return return_image if return_image else None
+    return _np.asarray(final_image) if return_image else None
 
 
 def clear_variables():

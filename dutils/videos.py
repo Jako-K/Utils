@@ -1,27 +1,37 @@
 import cv2 as _cv2
 import re as _re
 import time as _time
-from tqdm.notebook import tqdm as _tqdm_notebook
-from tqdm import tqdm as _tqdm
 import os as _os
 
 from .jupyter_ipython import in_jupyter as _in_jupyter
 from . import type_check as _type_check
-from . import input_output as _input_output
+from . import input_output as _io
 from . import images as _images
+
+if _in_jupyter():
+    from tqdm.notebook import tqdm as _tqdm
+else:
+    from tqdm import tqdm as _tqdm
 
 
 def get_video_info(path:str) -> dict:
-    """  """
+    """
+    Return general information (FPS, dimensions, etc.) about the video at `path`
+    @param path:
+    @return: dict with video info
+    """
     _type_check.assert_type(path, str)
-    _input_output.assert_path(path)
-    if not _input_output.is_file(path): raise ValueError("`path` most point to a file")
+    _io.assert_path(path)
+    if not _io.is_file(path):
+        raise ValueError("`path` most point to a file")
+    if not _io.get_file_extension(path).lower() in _io.video_formats:
+        raise ValueError(f"Don't recognise the video format {_io.get_file_extension(path)}")
 
     cap = _cv2.VideoCapture(path)
 
     info = dict(
-        video_format = _input_output.get_file_extension(path).replace(".", ""),
-        size = _input_output.get_file_size(path),
+        video_format = _io.get_file_extension(path).replace(".", ""),
+        size = _io.get_file_size(path),
         height = int(cap.get(_cv2.CAP_PROP_FRAME_HEIGHT)),
         width = int(cap.get(_cv2.CAP_PROP_FRAME_WIDTH)),
         frame_count = int(cap.get(_cv2.CAP_PROP_FRAME_COUNT)),
@@ -33,7 +43,7 @@ def get_video_info(path:str) -> dict:
 
 
 def preprocess_video(load_path: str, save_path: str, save_every_nth_frame: int = 3, scale_factor: float = 0.5,
-                     rotate_angle: int = 0, fps_out: int = 10, extra_apply: _type_check.FunctionType = None):
+                     rotate_angle: int = 0, fps_out: int = 10, extra_apply: _type_check.FunctionType = None) -> None:
     """
     Load video located at `load_path` for processing: Reduce FPS by `save_every_nth_frame`,
     resize resolution by `scale_factor` and clockwise rotation by `rotate_angle` .
@@ -58,17 +68,17 @@ def preprocess_video(load_path: str, save_path: str, save_every_nth_frame: int =
         to_check=[load_path, save_path, save_every_nth_frame, scale_factor, rotate_angle, fps_out],
         expected_types=[str, str, int, float, int, int]
     )
-    _input_output.path_exists(load_path)
+    _io.path_exists(load_path)
     legal_formats = [".mp4", ".avi"]
-    _type_check.assert_in(_input_output.get_file_extension(load_path).lower(), legal_formats)
-    _type_check.assert_in(_input_output.get_file_extension(save_path).lower(), legal_formats)
+    _type_check.assert_in(_io.get_file_extension(load_path).lower(), legal_formats)
+    _type_check.assert_in(_io.get_file_extension(save_path).lower(), legal_formats)
 
     # Setup
     temp_images = []
     cap = _cv2.VideoCapture(load_path)
     frame_i = -1
     num_frames = int(cap.get(_cv2.CAP_PROP_FRAME_COUNT))
-    progress_bar = _tqdm_notebook(total=num_frames) if _in_jupyter() else _tqdm(total=num_frames)
+    progress_bar = _tqdm(total=num_frames)
 
     # Prepare all frames for modified video
     while cap.isOpened():
@@ -101,7 +111,7 @@ def preprocess_video(load_path: str, save_path: str, save_every_nth_frame: int =
     video.release()
 
 
-def video_to_images(video_path: str, image_folder_path: str) -> None:
+def video_to_images(video_path:str, image_folder_path:str) -> None:
     """
     Break a video down into individual frames and save them to disk.
 
@@ -115,9 +125,9 @@ def video_to_images(video_path: str, image_folder_path: str) -> None:
 
     # Checks
     _type_check.assert_types(to_check=[video_path, image_folder_path], expected_types=[str, str])
-    _input_output.path_exists(video_path)
-    _input_output.path_exists(image_folder_path)
-    _type_check.assert_in(_input_output.get_file_extension(video_path).lower(), [".mp4", ".avi"])
+    _io.path_exists(video_path)
+    _io.path_exists(image_folder_path)
+    _type_check.assert_in(_io.get_file_extension(video_path).lower(), [".mp4", ".avi"])
 
     # Extract and save individual frames
     cap = _cv2.VideoCapture(video_path)
@@ -132,13 +142,60 @@ def video_to_images(video_path: str, image_folder_path: str) -> None:
             break
 
         # Save frame
-        save_path = _os.path.join(image_folder_path, str(frame_i)) + ".jpg"
+        save_path = _os.path.join(image_folder_path, str(frame_i)) + ".png"
         successful_save = _cv2.imwrite(save_path, frame)
         if not successful_save:
             raise RuntimeError(f"Failed to save frame {frame_i}, cause unknown")
 
 
-def cv2_video_frame_count(cap:_cv2.VideoCapture):
+def images_to_video(image_paths:list, video_save_path:str, fps:int=30, allow_override:bool=False) -> None:
+    """
+    Make a video in .mp4 format from images at `image_paths` with `fps`.
+
+    @param image_paths: A list with 2 or more images. NOTE: all images must have the shape height, width and colors-channels
+    @param video_save_path: The path of the final video. NOTE: this must have suffixed by ".mp4"
+    @param fps: Frames per second
+    @param allow_override: If true, will override any already existing video located at `video_save_path`
+    @return: None
+    """
+    # Checks
+    _type_check.assert_types([image_paths, video_save_path, fps, allow_override], [list, str, int, bool])
+    if not allow_override:
+        _io.assert_path_dont_exists(video_save_path)
+    if not all([_os.path.exists(p) for p in image_paths]):
+        raise ValueError("Received one or more bad image paths.")
+    if len(image_paths) < 2:
+        raise ValueError(f"`image_paths` must contain at least 2 images, received `{len(image_paths)}`")
+    if video_save_path[-4:].lower() != ".mp4":
+        raise ValueError("The only supported video format is .mp4")
+    if fps < 1:
+        raise ValueError(f"`fps` cannot be less then 1, received {fps}")
+
+
+    # Setup video writer and pass it the first frame
+    image = _cv2.imread(image_paths[0])
+    h, w, c = image.shape
+    fourcc = _cv2.VideoWriter_fourcc(*'mp4v')
+    video = _cv2.VideoWriter(video_save_path, fourcc, fps, (w, h))
+    video.write(image)
+
+    # Pass the rest of the images to `video`
+    for path in _tqdm(image_paths[1:]):
+        image = _cv2.imread(path)
+
+        # Check image dimensions and close everything if there's an error
+        if (h, w, c) != image.shape:
+            _cv2.destroyAllWindows()
+            video.release()
+            raise ValueError(f"Expect all images in `image_paths` to have the same dimensions, but {(h, w, c)} != {image.shape}")
+
+        video.write(image)
+
+    _cv2.destroyAllWindows()
+    video.release()
+
+
+def cv2_video_frame_count(cap:_cv2.VideoCapture) -> int:
     _type_check.assert_type(cap, _cv2.VideoCapture)
     return int(cap.get(_cv2.CAP_PROP_FRAME_COUNT))
 
@@ -147,5 +204,6 @@ __all__ = [
     "get_video_info",
     "preprocess_video",
     "video_to_images",
-    "cv2_video_frame_count"
+    "cv2_video_frame_count",
+    "images_to_video"
 ]

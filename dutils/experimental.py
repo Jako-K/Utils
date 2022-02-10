@@ -2,6 +2,8 @@
 Description
 Stuff that hasn't been tested yet or that I'm on the fence about
 """
+import os.path
+
 import torch as _torch
 import numpy as _np
 import warnings as _warnings
@@ -15,6 +17,8 @@ import cv2 as _cv2
 import os as _os
 from glob import glob as _glob
 import re as _re
+import random as _random
+import shutil as _shutil
 
 from . import colors as _colors
 from . import input_output as _input_output
@@ -22,6 +26,7 @@ from . import type_check as _type_check
 from . import images as _images
 from . import pytorch as _pytorch
 from . import system_info as _system_info
+from . import videos as _videos
 
 import pkg_resources as _pkg_resources
 
@@ -176,7 +181,42 @@ def turn_off_numpy_scientific():
     _np.set_printoptions(suppress=True)
 
 
+def keep_frames_with_humans(video_path:str, model, batch_size:int=32):
 
+    # Split video into frames (it's probably unwise to keep the frames in RAM, so will put them in temporary folder)
+    temp_path = "./temp_image_folder_" + str(_random.getrandbits(128))
+    _os.mkdir(temp_path)
+    _videos.video_to_images(video_path, temp_path)
+
+    # Create "batches" of paths
+    paths = sorted(_glob(_os.path.join(temp_path, "*.png")), key=_os.path.getmtime)
+    batch, batches = [], []
+    for i, p in enumerate(paths):
+        batch.append(p)
+        if i and (((i + 1) % batch_size == 0) or ((i + 1) == len(paths))):
+            batches.append(batch)
+            batch = []
+
+    # inference
+    findings = []
+    for batch in batches:
+        results = model(batch)
+
+        # Check something is detected --> 0, 1 is person and cycle respectively in COCO
+        for p in results.pred:
+            if p.shape[0] and any(p[:, 5] < 2):
+                findings.append(True)
+            else:
+                findings.append(False)
+
+    # Remove all frames without a human or a cycle
+    assert len(findings) == len(paths), "Must be true"
+    final_image_paths = [path for i, path in enumerate(paths) if findings[i]]
+
+    # Make the final video"
+    save_path = video_path[:-4] + "_reduced.mp4"
+    _videos.images_to_video(final_image_paths, save_path)
+    _shutil.rmtree(temp_path)
 
 
 __all__ = [
