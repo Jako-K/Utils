@@ -7,6 +7,8 @@ from .jupyter_ipython import in_jupyter as _in_jupyter
 from . import type_check as _type_check
 from . import input_output as _io
 from . import images as _images
+import subprocess as _subprocess
+import platform as _platform
 
 if _in_jupyter():
     from tqdm.notebook import tqdm as _tqdm
@@ -23,12 +25,12 @@ def get_video_info(path:str) -> dict:
     _type_check.assert_type(path, str)
     _io.assert_path(path)
     if not _io.is_file(path):
-        raise ValueError("`path` most point to a file")
+        raise ValueError("`path` must point to a file")
     if not _io.get_file_extension(path).lower() in _io.video_formats:
         raise ValueError(f"Don't recognise the video format {_io.get_file_extension(path)}")
 
+    # Info from cv2 # TODO Transfer this to FFMPEG instead of using cv2
     cap = _cv2.VideoCapture(path)
-
     info = dict(
         video_format = _io.get_file_extension(path).replace(".", ""),
         size = _io.get_file_size(path),
@@ -39,6 +41,19 @@ def get_video_info(path:str) -> dict:
     )
     info["duration_sec"] = round(info["frame_count"] / info["frames_per_sec"], 2)
     info["duration_hms"] = _re.sub(r"00[hms] |0(?=[1-9])", "", _time.strftime("%Hh %Mm %Ss", _time.gmtime(info["duration_sec"])))
+
+    # Info from FFMPEG (Could not find a way to get it from cv2)
+    if _platform.system() == 'Windows': cmd = ["ffprobe", "-show_streams", path]
+    else: cmd = ["ffprobe -show_streams " + path]
+    p = _subprocess.Popen(cmd, stdout=_subprocess.PIPE, stderr=_subprocess.PIPE, shell=True)
+    lines = [str(line.decode('UTF-8', 'ignore')) for line in iter(p.stdout.readline, b'')]
+
+    for line in lines:
+        if line.startswith("bit_rate="):
+            info["bit_rate"] = line[len("bit_rate="):].strip()
+        if line.startswith("codec_long_name="):
+            info["codec_long_name"] = line[len("codec_long_name="):].strip()
+
     return info
 
 
@@ -153,11 +168,12 @@ def images_to_video(image_paths:list, video_save_path:str, fps:int=30, allow_ove
     Make a video in .mp4 format from images at `image_paths` with `fps`.
 
     @param image_paths: A list with 2 or more images. NOTE: all images must have the shape height, width and colors-channels
-    @param video_save_path: The path of the final video. NOTE: this must have suffixed by ".mp4"
+    @param video_save_path: The path of the final video. NOTE: this must be suffixed by ".mp4"
     @param fps: Frames per second
     @param allow_override: If true, will override any already existing video located at `video_save_path`
     @return: None
     """
+
     # Checks
     _type_check.assert_types([image_paths, video_save_path, fps, allow_override], [list, str, int, bool])
     if not allow_override:
@@ -170,7 +186,6 @@ def images_to_video(image_paths:list, video_save_path:str, fps:int=30, allow_ove
         raise ValueError("The only supported video format is .mp4")
     if fps < 1:
         raise ValueError(f"`fps` cannot be less then 1, received {fps}")
-
 
     # Setup video writer and pass it the first frame
     image = _cv2.imread(image_paths[0])

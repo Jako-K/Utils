@@ -3,6 +3,8 @@
 import IPython as _IPython
 import cv2 as _cv2
 import matplotlib.pyplot as _plt
+import torch
+import PIL as _PIL
 from PIL import Image as _Image
 import numpy as _np
 import requests as _requests
@@ -10,6 +12,7 @@ import validators as _validators
 from rectpack import newPacker as _newPacker
 import warnings as _warnings
 import torch as _torch
+import re as _re
 
 from . import type_check as _type_check
 from . import input_output as _input_output
@@ -94,19 +97,20 @@ def _get_collage_image(images:list, allow_rotations:bool=False):
     @return: A single collage image build from `images` in `np.ndarray` format
     """
 
-    # A lot of the complexity is removed if all the images are of the same size. Which means a simpler method can be used
+    # A lot of the complexity is removed if all the images are of the same size. This means that a much more constrained approached can be used.
     if all([images[0].shape == image.shape for image in images]):
         cols, rows, resize_factor, _ = _get_grid_parameters(images)
         return _get_grid_image(images, cols, rows, resize_factor)
 
     # Setup
     rectangles = [(s.shape[0], s.shape[1], i) for i, s in enumerate(images)]
-    height_domain = [60 * i for i in range(1, 8)] + [int(1080 * 5 / 1.05 ** i) for i in range(50, 0, -1)] # Just different sizes to try
+    height_domain = [60 * i for i in range(1, 8)] + [int(1080 * 5 / 1.05 ** i) for i in range(50, 0, -1)]
     width_domain = [100 * i for i in range(1, 8)] + [int(1920 * 5 / 1.05 ** i) for i in range(50, 0, -1)]
-    canvas_dims = list(zip(height_domain, width_domain))
+    canvas_dims = list(zip(height_domain, width_domain)) # Just different sizes to try
     canvas_image = None
+    max_x, min_y = -1, 1e6 # Used to crop the grey parts
 
-    # Attempt to pack all images within the smallest of the predefined width-height combinations
+    # Attempt to pack all images into the smallest of the predefined width-height combinations
     for canvas_dim in canvas_dims:
 
         # Try packing
@@ -120,9 +124,8 @@ def _get_collage_image(images:list, allow_rotations:bool=False):
             continue
 
         # Setup
-        canvas_image = _np.zeros((canvas_dim[0], canvas_dim[1], 3)).astype(_np.uint8) + 67 # 67 seems to be a pretty versatile grey color
+        canvas_image = _np.zeros((canvas_dim[0], canvas_dim[1], 3)).astype(_np.uint8) + 65 # 65 seems to be a pretty versatile grey color i.e. it looks decent no matter the pictures
         H = canvas_image.shape[0]
-
 
         for rect in packer[0]:
             image = images[rect.rid]
@@ -133,13 +136,20 @@ def _get_collage_image(images:list, allow_rotations:bool=False):
 
             # Handle image rotations if necessary
             if image.shape[:-1] != (h, w): image = image.transpose(1, 0, 2)
-            canvas_image[y:y + h, x:x + w, :] = image
+            canvas_image[y:y+h, x:x+w, :] = image
+
+            if max_x < (x+w): max_x = x+w
+            if min_y > y: min_y = y
+
         break
 
     if canvas_image is None:
-        raise RuntimeError("Failed to produce mosaic image. The cause is most likely to many and/or to large images")
+        raise RuntimeError("Failed to produce mosaic image. This is probably caused by to many and/or to large images")
 
-    return canvas_image
+    if (max_x == -1) or (min_y == 1e6):
+        raise RuntimeError("This should not be possible.")
+
+    return canvas_image[min_y:, :max_x, :]
 
 
 def _get_grid_parameters(images, max_height=1080, max_width=1920, desired_ratio=9/17):
@@ -150,9 +160,9 @@ def _get_grid_parameters(images, max_height=1080, max_width=1920, desired_ratio=
         (2) Amount of image scaling necessary
         (3) the number of empty cells (e.g. 3 images on a 2x2 --> empty_cell = 1)
 
-    NOTE1: This was pretty challenging function to write and the solution probably suffered from this.
-           I've included some notes at "doc/_get_grid_parameters.jpg" which will hopefully motivate the solution - in
-           particular the loss-function used for optimization.
+    NOTE1: This was a pretty challenging function to write and the solution may appear a bit convoluted.
+           I've included some notes at "doc/_get_grid_parameters.jpg" which will hopefully motivate the solution -
+           in particular the loss-function used for optimization.
     NOTE2: This function is only intended to be used by `show_image()`
 
     @param images: list np.ndarray images
@@ -225,7 +235,7 @@ def _get_grid_image(images:list, cols:int, rows:int, resize_factor:float=1.0):
 
 def _get_image(source, resize_factor: float = 1.0, BGR2RGB: bool = None):
     """
-    Take an image in format: path, url, ndarray or tensor.
+    Take an image in format: path, url, np.ndarray, PIL.Image.Image or torch.tensor.
     Returns `source` as np.ndarray image after some processing e.g. remove alpha
 
     NOTE: This function is only intended to be used by `show_image()`
@@ -236,9 +246,10 @@ def _get_image(source, resize_factor: float = 1.0, BGR2RGB: bool = None):
     is_url = True if isinstance(source, str) and _validators.url(source) is True else False
     is_ndarray = True if isinstance(source, _np.ndarray) else False
     is_torch_tensor = True if isinstance(source, _torch.Tensor) else False
+    is_pillow = True if isinstance(source, _PIL.Image.Image) else False
 
-    if not any([is_path, is_url, is_ndarray, is_torch_tensor]):
-        raise ValueError("`source` could not be interpreted as a path, url, ndarray or tensor.")
+    if not any([is_path, is_url, is_ndarray, is_torch_tensor, is_pillow]):
+        raise ValueError("`source` couldn't be recognized as a path, url, ndarray pillow_image or tensor.")
 
     if is_path and is_url:
         raise AssertionError("This should not be possible")  # Don't see how a `source` can be a path and a url simultaneously
@@ -255,8 +266,29 @@ def _get_image(source, resize_factor: float = 1.0, BGR2RGB: bool = None):
         raise ValueError(f"Expect tensor image to be of shape (channels, height, width), but received: {source.shape}. "
                          f"If your image is of shape (height, width, channels) use `<YOUR_IMAGE>.permute(2, 0, 1)`")
 
-    # Cast to Pillow image
-    if is_path:
+    # Remap from various data types to uint8 if possible
+    if (is_torch_tensor or is_ndarray) and (_re.search("uint8", str(source.dtype)) is None):
+        is_float = (_re.search("float", str(source.dtype)) is not None)
+        is_int = (_re.search("int", str(source.dtype)) is not None)
+        map_to_uint8 = lambda s: s.astype(_np.uint8) if is_ndarray else s.to(torch.uint8)
+
+        # If all pixel values are in range 0-255 --> remap to range 0-255 and cast to unit8
+        if (is_float or is_int) and (0.0 <= source ).all() and (source <= 1.0 ).all():
+            source = map_to_uint8(source*255)
+
+        # If any pixel value exceed 1 and all pixels are in range 0-255 --> cast to unit8 directly
+        elif (is_float or is_int) and (source > 1.0).any() and (0.0 <= source).all() and (source <= 255.0).all():
+            source = map_to_uint8(source)
+
+        else:
+            suggestion = "<YOUR_IMAGE>.to(torch.uint8)" if is_torch_tensor else "<YOUR_IMAGE>.astype(np.uint8)"
+            raise ValueError(f"Expected type `uint8`, but received dtype `{source.dtype}`."
+                             f" Try changing the image type with `{suggestion}`")
+
+    # Ensure `source` is a Pillow image
+    if is_pillow:
+        image = source
+    elif is_path:
         image = _Image.open(source)
     elif is_url:
         image = _Image.open(_requests.get(source, stream=True).raw)
@@ -265,8 +297,10 @@ def _get_image(source, resize_factor: float = 1.0, BGR2RGB: bool = None):
     elif is_torch_tensor:
         corrected = source.permute(1, 2, 0) if (len(source.shape) > 2) else source
         image = _Image.fromarray(corrected.numpy())
+    else:
+        raise RuntimeError("Shouldn't have gotten this far")
 
-    # Swap blue and red color channel stuff
+    # Swap blue and red color channel (cv2 stuff)
     num_channels = len(image.getbands())
     bgr2rgb_auto = (BGR2RGB is None) and is_ndarray and (num_channels in [3, 4])
     if BGR2RGB or bgr2rgb_auto:
@@ -296,19 +330,21 @@ def _get_image(source, resize_factor: float = 1.0, BGR2RGB: bool = None):
 
 def show_image(source, resize_factor:float=1.0, BGR2RGB:bool=None, return_image:bool=False):
     """
-    Display a single image or a list of images from path, np.ndarray, torch.Tensor or url.
+    Display a single image or a list of images.
+    Accepted image formats: path, np.ndarray, PIL.Image.Image, torch.Tensor and url.
 
-    @param source: path, np.ndarray, torch.Tensor url pointing to the image you wish to display
+    @param source: path, np.ndarray, PIL.Image.Image, torch.Tensor url pointing to the image you wish to display
     @param resize_factor: Rescale factor in percentage (i.e. 0-1)
     @param BGR2RGB: Convert `source` from BGR to RGB. If `None`, will convert np.ndarray images automatically
     @param return_image: return image as `np.ndarray`
     """
 
     # Checks
-    _type_check.assert_in(type(source), [_np.ndarray, _torch.Tensor, str, list, tuple])
+    _type_check.assert_in(type(source), [_np.ndarray, _torch.Tensor, _PIL.Image.Image, str, list, tuple])
     _type_check.assert_types([resize_factor, BGR2RGB], [float, bool], [0, 1])
     assert_in_jupyter()
-
+    if isinstance(source, (list, tuple)) and (not len(source)):
+        raise ValueError("Received empty `source`. Did you perhaps pass an empty list or something similar?")
 
     # Prepare the final image(s)
     if type(source) not in [list, tuple]:
@@ -335,7 +371,7 @@ def show_image(source, resize_factor:float=1.0, BGR2RGB:bool=None, return_image:
     if scale_factor:
         height = int(final_image.shape[0]*scale_factor)
         width = int(final_image.shape[1]*scale_factor)
-        final_image = _cv2.resize(final_image, (height, width))
+        final_image = _cv2.resize(final_image, (width, height))
 
     # Display and return image
     final_image = _Image.fromarray(final_image)
@@ -355,6 +391,6 @@ __all__=[
     "play_audio",
     "show_image",
     "clear_variables"
-]
+ ]
 
 
