@@ -180,6 +180,23 @@ def turn_off_numpy_scientific():
     _np.set_printoptions(suppress=True)
 
 
+def read_yolo_annotation_file(path: str, auto_clip: bool = False) -> list:
+    """
+    Read a yolo annotation file. Expects a .txt file build from lines like:
+    class_labal_int x_mid y_mid box_width box_height
+
+    Return a tuple with a list of BBS and a list of labels
+    ([2, 0], [[0.6445, 0.4383, 0.4743, 0.8676], [0.6013, 0.6334, 0.362, 0.4665]])
+    """
+    as_single_str = _input_output.read_file(path).strip()
+    if not as_single_str:
+        return None
+
+    anno_as_lines = as_single_str.split("\n")
+    anno_as_lists = [[round(float(n), 4) for n in l.split(" ")] for l in anno_as_lines]
+    return _torch.tensor(anno_as_lists)
+
+
 __all__ = [
     "show_dicom",
     "load_dicom",
@@ -191,7 +208,8 @@ __all__ = [
     "get_module_version",
     "normal_dist",
     "get_test_image",
-    "turn_off_numpy_scientific"
+    "turn_off_numpy_scientific",
+    "read_yolo_annotation_file"
 ]
 
 

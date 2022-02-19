@@ -9,6 +9,7 @@ from . import input_output as _io
 from . import images as _images
 import subprocess as _subprocess
 import platform as _platform
+import random as _random
 
 if _in_jupyter():
     from tqdm.notebook import tqdm as _tqdm
@@ -195,7 +196,7 @@ def images_to_video(image_paths:list, video_save_path:str, fps:int=30, allow_ove
     video.write(image)
 
     # Pass the rest of the images to `video`
-    for path in _tqdm(image_paths[1:]):
+    for path in image_paths[1:]:
         image = _cv2.imread(path)
 
         # Check image dimensions and close everything if there's an error
@@ -210,15 +211,45 @@ def images_to_video(image_paths:list, video_save_path:str, fps:int=30, allow_ove
     video.release()
 
 
-def cv2_video_frame_count(cap:_cv2.VideoCapture) -> int:
-    _type_check.assert_type(cap, _cv2.VideoCapture)
-    return int(cap.get(_cv2.CAP_PROP_FRAME_COUNT))
+def get_frame_from_video(video_path:str, random_frame:bool=False):
+    """
+    Select a single frame from `video_path`.
+
+    @param video_path: path pointing to a video file
+    @param random_frame: if True, return af random frame, otherwise return the first frame
+    @return: image in np.ndarray format
+    """
+    # Checks
+    _type_check.assert_types([video_path, random_frame], [str, bool])
+    _io.path_exists(video_path)
+
+    # Setup
+    cap = _cv2.VideoCapture(video_path)
+    save_index = 0 if not random_frame else _random.randint(0, int(cap.get(_cv2.CAP_PROP_FRAME_COUNT))-1)
+    frame_i = -1
+    return_frame = None
+
+    # Loop over video to find the frame specified by `save_index`
+    while cap.isOpened():
+        frame_i += 1
+        video_feed_active, frame = cap.read()
+
+        if (save_index == frame_i) or (not video_feed_active):
+            return_frame = frame
+            cap.release()
+            _cv2.destroyAllWindows()
+            break
+
+    # Wrap up
+    if return_frame is None:
+        raise RuntimeError(f"Failed to extract frame, cause unknown")
+    return return_frame
 
 
 __all__ = [
     "get_video_info",
     "preprocess_video",
     "video_to_images",
-    "cv2_video_frame_count",
-    "images_to_video"
+    "images_to_video",
+    "get_frame_from_video"
 ]

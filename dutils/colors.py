@@ -17,7 +17,7 @@ import matplotlib.pyplot as _plt
 
 from . import type_check as _type_check
 
-# Seaborn color scheme
+# Seaborn color scheme (bright)
 _seaborn_blue = (31, 119, 180)
 _seaborn_orange = (255, 127, 14)
 _seaborn_green = (44, 160, 44)
@@ -36,6 +36,28 @@ _seaborn_colors = {"blue": _seaborn_blue,
                   "pink": _seaborn_pink,
                   "grey": _seaborn_grey,
                   "white": _seaborn_white}
+
+# Seaborn color scheme (dark)
+_seaborn_blue_dark = (89,117,117)
+_seaborn_orange_dark = (205,137,137)
+_seaborn_green_dark = (95,158,158)
+_seaborn_red_dark = (182,93,93)
+_seaborn_purple_dark = (134,122,122)
+_seaborn_brown_dark = (141,120,120)
+_seaborn_pink_dark = (207,149,149)
+_seaborn_grey_dark = (140,140,140)
+_seaborn_white_dark = (220, 220, 220)
+_seaborn_colors_dark = {
+    "blue": _seaborn_blue_dark,
+    "orange": _seaborn_orange_dark,
+    "green": _seaborn_green_dark,
+    "red": _seaborn_red_dark,
+    "purple": _seaborn_purple_dark,
+    "brown": _seaborn_brown_dark,
+    "pink": _seaborn_pink_dark,
+    "grey": _seaborn_grey_dark,
+    "white": _seaborn_white_dark
+}
 
 
 _legal_types = ["rgb", "rgb_01", "hex"]
