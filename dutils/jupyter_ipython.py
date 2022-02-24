@@ -233,7 +233,7 @@ def _get_grid_image(images:list, cols:int, rows:int, resize_factor:float=1.0):
     return canvas
 
 
-def _get_image(source, resize_factor: float = 1.0, BGR2RGB: bool = None):
+def _get_image(source, resize_factor: float = 1.0, BGR2RGB: bool = None, image_border:int = None):
     """
     Take an image in format: path, url, np.ndarray, PIL.Image.Image or torch.tensor.
     Returns `source` as np.ndarray image after some processing e.g. remove alpha
@@ -317,6 +317,10 @@ def _get_image(source, resize_factor: float = 1.0, BGR2RGB: bool = None):
 
     image = _np.asarray(image)
 
+    # Add border
+    if image_border is not None:
+        image = _cv2.copyMakeBorder(image, 1, 1, 1, 1, _cv2.BORDER_CONSTANT, value=[image_border]*3)
+
     # Adds 3 identical channels to greyscale images (for compatibility)
     if (len(image.shape) == 2) or (image.shape[-1] == 1):
         image = _cv2.cvtColor(image, _cv2.COLOR_GRAY2RGB)
@@ -328,7 +332,7 @@ def _get_image(source, resize_factor: float = 1.0, BGR2RGB: bool = None):
     return image
 
 
-def show_image(source, resize_factor:float=1.0, BGR2RGB:bool=None, return_image:bool=False):
+def show_image(source, resize_factor:float=1.0, BGR2RGB:bool=None, return_image:bool=False, image_border:int=None):
     """
     Display a single image or a list of images.
     Accepted image formats: path, np.ndarray, PIL.Image.Image, torch.Tensor and url.
@@ -337,14 +341,20 @@ def show_image(source, resize_factor:float=1.0, BGR2RGB:bool=None, return_image:
     @param resize_factor: Rescale factor in percentage (i.e. 0-1)
     @param BGR2RGB: Convert `source` from BGR to RGB. If `None`, will convert np.ndarray images automatically
     @param return_image: return image as `np.ndarray`
+    @param image_border: If not None, add border around each image equal to the value of `image_border` must be in [0,255]
     """
 
     # Checks
     _type_check.assert_in(type(source), [_np.ndarray, _torch.Tensor, _PIL.Image.Image, str, list, tuple])
-    _type_check.assert_types([resize_factor, BGR2RGB], [float, bool], [0, 1])
+    _type_check.assert_types([resize_factor, BGR2RGB, image_border], [float, bool, int], [0, 1, 1])
     assert_in_jupyter()
     if isinstance(source, (list, tuple)) and (not len(source)):
-        raise ValueError("Received empty `source`. Did you perhaps pass an empty list or something similar?")
+        raise ValueError("The that should contain image-information `source` is empty. Did you perhaps pass an empty list or something similar?")
+
+    if (image_border is not None) and not (0 <= image_border <= 255):
+        raise ValueError("`image_border` is a pixel value and must therefore be between [0,255], "
+                         f"but received `{image_border}`")
+
 
     # Prepare the final image(s)
     if type(source) not in [list, tuple]:
@@ -358,7 +368,7 @@ def show_image(source, resize_factor:float=1.0, BGR2RGB:bool=None, return_image:
             random_indexes_200 = _np.random.choice(_np.arange(len(source)), 200)
             source = [source[i] for i in random_indexes_200]
 
-        images = [_get_image(image, resize_factor, BGR2RGB) for image in source]
+        images = [_get_image(image, resize_factor, BGR2RGB, image_border) for image in source]
         final_image = _get_collage_image(images, allow_rotations=False)
 
 
