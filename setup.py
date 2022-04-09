@@ -23,10 +23,10 @@ setup(
         "validators",
         "pynput",
         "wandb",
-        "rectpack"
-        "tqdm"
-        "seaborn"
-        "termcolor"
-        "scikit_learn"
+        "rectpack",
+        "tqdm",
+        "seaborn",
+        "termcolor",
+        "scikit_learn",
     ]
 )
