@@ -24,5 +24,9 @@ setup(
         "pynput",
         "wandb",
         "rectpack"
+        "tqdm"
+        "seaborn"
+        "termcolor"
+        "scikit_learn"
     ]
 )

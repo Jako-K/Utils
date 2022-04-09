@@ -294,7 +294,7 @@ class _Templates:
             """
                 from kaggle_secrets import UserSecretsClient
                 wandb.login(key=UserSecretsClient().get_secret("wandb_api_key"))
-            """ if on_kaggle else _wandb.login()
+            """ if on_kaggle else ""
         string = \
             f"""
             class Config:
@@ -514,7 +514,7 @@ def get_model_save_name(model_name:str, to_add: dict=None, separator: str = "  .
     return return_string
 
 
-def yolo_bb_from_normal_bb(bb, img_width, img_height, label, xywh=False):
+def yolo_bb_from_normal_bb(bb, label, img_width, img_height, xywh=False):
     # TODO refactor and add checks
     if not xywh:
         x1, y1, x2, y2 = bb
@@ -530,7 +530,7 @@ def yolo_bb_from_normal_bb(bb, img_width, img_height, label, xywh=False):
     bb_center_x_norm = (x1 + bb_width / 2) / img_width
     bb_center_y_norm = (y1 + bb_height / 2) / img_height
 
-    # Yolo format --> |class_name center_x center_y width height|.txt  -  NOT included the two '|'
+    # Yolo format --> |class_name center_x center_y width height|.txt  -  NOT including the two '|'
     string = str(label)
     for s in [bb_center_x_norm, bb_center_y_norm, bb_width_norm, bb_height_norm]:
         string += " " + str(s)

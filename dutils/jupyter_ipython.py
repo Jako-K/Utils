@@ -104,8 +104,8 @@ def _get_collage_image(images:list, allow_rotations:bool=False):
 
     # Setup
     rectangles = [(s.shape[0], s.shape[1], i) for i, s in enumerate(images)]
-    height_domain = [60 * i for i in range(1, 8)] + [int(1080 * 5 / 1.05 ** i) for i in range(50, 0, -1)]
-    width_domain = [100 * i for i in range(1, 8)] + [int(1920 * 5 / 1.05 ** i) for i in range(50, 0, -1)]
+    height_domain = [60 * i for i in range(1, 8)] + [int(1080 * 8 / 1.05 ** i) for i in range(50, 0, -1)]
+    width_domain = [100 * i for i in range(1, 8)] + [int(1920 * 8 / 1.05 ** i) for i in range(50, 0, -1)]
     canvas_dims = list(zip(height_domain, width_domain)) # Just different sizes to try
     canvas_image = None
     max_x, min_y = -1, 1e6 # Used to crop the grey parts
@@ -295,6 +295,7 @@ def _get_image(source, resize_factor: float = 1.0, BGR2RGB: bool = None, image_b
     elif is_ndarray:
         image = _Image.fromarray(source)
     elif is_torch_tensor:
+        source = source.detach().cpu()
         corrected = source.permute(1, 2, 0) if (len(source.shape) > 2) else source
         image = _Image.fromarray(corrected.numpy())
     else:
@@ -365,7 +366,7 @@ def show_image(source, resize_factor:float=1.0, BGR2RGB:bool=None, return_image:
                 f"Received `{len(source)}` images, the maximum limit is 200. "
                 "Will pick 200 random images from `source` for display and discard the rest"
             )
-            random_indexes_200 = _np.random.choice(_np.arange(len(source)), 200)
+            random_indexes_200 = _np.random.choice(_np.arange(len(source)), 200, replace=False)
             source = [source[i] for i in random_indexes_200]
 
         images = [_get_image(image, resize_factor, BGR2RGB, image_border) for image in source]

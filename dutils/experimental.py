@@ -197,6 +197,40 @@ def read_yolo_annotation_file(path: str, auto_clip: bool = False) -> list:
     return _torch.tensor(anno_as_lists)
 
 
+def ndarray_grey_to_rgb(image:_np.ndarray):
+    """ Copy the greyscale 3 times to form R, G and B. Shape change: (H, W) --> (H, W, 3)"""
+    _images.assert_ndarray_image(image)
+    return _cv2.merge([image] * 3)
+
+
+def ndarray_save_image(image:_np.ndarray, save_path:str, BGR2RGB:bool=True) -> None:
+    _type_check.assert_types([image, save_path, BGR2RGB], [_np.ndarray, str, bool])
+    if BGR2RGB:
+        image = _images.ndarray_bgr2rgb(image)
+    _cv2.imwrite(save_path, image)
+
+def xywhn2xyxy(label, x, y, w, h, image_height, image_width):
+    # Convert xywhn to cartesian coordinates
+    x_left = int((x - w / 2) * image_width)
+    x_right = int((x + w / 2) * image_width)
+    y_top = int((y - h / 2) * image_height)
+    y_bottom = int((y + h / 2) * image_height)
+
+    # Clip if close to the edges
+    if x_left < 0: x_left = 0
+    if x_right > (image_width - 1): x_right = image_width - 1
+    if y_top < 0: y_top = 0
+    if y_bottom > (image_height - 1): y_bottom = image_height - 1
+    
+    return int(label), x_left, y_top, x_right, y_bottom
+
+
+def clear_cuda():
+    import gc
+    gc.collect()
+    torch.cuda.empty_cache()
+
+
 __all__ = [
     "show_dicom",
     "load_dicom",
@@ -209,7 +243,9 @@ __all__ = [
     "normal_dist",
     "get_test_image",
     "turn_off_numpy_scientific",
-    "read_yolo_annotation_file"
+    "read_yolo_annotation_file",
+    "xywhn2xyxy",
+    "clear_cuda"
 ]
 
 
