@@ -388,7 +388,7 @@ def search_file(file_path: str, search_query: str, lazy_search: bool = False, re
     # Checks
     _type_check.assert_types([file_path, search_query, lazy_search, regex_flag], [str, str, bool, int])
     if not is_file(file_path):
-        raise ValueError("`file_path` is not a file. Did you perhaps pass a folder?")
+        raise ValueError(f"`{file_path}` is not a file. Did you perhaps pass a folder?")
     if search_query == "":
         raise ValueError("Received an empty `search_query`.")
 

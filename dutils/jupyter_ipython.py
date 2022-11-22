@@ -1,5 +1,5 @@
 # TODO add unit test
-
+_ALLOW_NONE_JUPYTER = False
 import IPython as _IPython
 import cv2 as _cv2
 import matplotlib.pyplot as _plt
@@ -348,7 +348,7 @@ def show_image(source, resize_factor:float=1.0, BGR2RGB:bool=None, return_image:
     # Checks
     _type_check.assert_in(type(source), [_np.ndarray, _torch.Tensor, _PIL.Image.Image, str, list, tuple])
     _type_check.assert_types([resize_factor, BGR2RGB, image_border], [float, bool, int], [0, 1, 1])
-    assert_in_jupyter()
+    if not _ALLOW_NONE_JUPYTER: assert_in_jupyter()
     if isinstance(source, (list, tuple)) and (not len(source)):
         raise ValueError("The that should contain image-information `source` is empty. Did you perhaps pass an empty list or something similar?")
 
@@ -386,7 +386,7 @@ def show_image(source, resize_factor:float=1.0, BGR2RGB:bool=None, return_image:
 
     # Display and return image
     final_image = _Image.fromarray(final_image)
-    display(final_image)
+    if not _ALLOW_NONE_JUPYTER: display(final_image)
     return _np.asarray(final_image) if return_image else None
 
 

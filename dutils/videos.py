@@ -27,8 +27,6 @@ def get_video_info(path:str) -> dict:
     _io.assert_path(path)
     if not _io.is_file(path):
         raise ValueError("`path` must point to a file")
-    if not _io.get_file_extension(path).lower() in _io.video_formats:
-        raise ValueError(f"Don't recognise the video format {_io.get_file_extension(path)}")
 
     # Info from cv2 # TODO Transfer this to FFMPEG instead of using cv2
     cap = _cv2.VideoCapture(path)
@@ -38,9 +36,9 @@ def get_video_info(path:str) -> dict:
         height = int(cap.get(_cv2.CAP_PROP_FRAME_HEIGHT)),
         width = int(cap.get(_cv2.CAP_PROP_FRAME_WIDTH)),
         frame_count = int(cap.get(_cv2.CAP_PROP_FRAME_COUNT)),
-        frames_per_sec = int(cap.get(_cv2.CAP_PROP_FPS)),
+        fps = int(cap.get(_cv2.CAP_PROP_FPS)),
     )
-    info["duration_sec"] = round(info["frame_count"] / info["frames_per_sec"], 2)
+    info["duration_sec"] = round(info["frame_count"] / info["fps"], 2)
     info["duration_hms"] = _re.sub(r"00[hms] |0(?=[1-9])", "", _time.strftime("%Hh %Mm %Ss", _time.gmtime(info["duration_sec"])))
 
     # Info from FFMPEG (Could not find a way to get it from cv2)

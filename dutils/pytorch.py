@@ -235,7 +235,7 @@ class _Templates:
                 if C.use_wandb:
                     wandb.log({"train_loss": train_mean, "valid_loss": valid_mean, "lr":lr})
     
-                if (epoch > 0) and (stats["valid_loss"][epoch] < stats["valid_loss"][epoch-1]): # Save model if it's better
+                elif (epoch > 0) and (stats["valid_loss"][epoch] < stats.loc[:(epoch-1) ,"valid_loss"].min()): # Save model if it's better
                     if C.save_only_best_model and (best_model_name != "0_EPOCH.pth"): 
                         U.input_output.remove_file(f"./{best_model_name}")
                         
@@ -255,9 +255,9 @@ class _Templates:
     
             # Save model
             if C.use_wandb:
-                import shutil
-                shutil.copy(best_model_name, os.path.join(wandb.run.dir, best_model_name))
-                wandb.save(best_model_name, policy="now")
+                for upload_path in [C.python_script_path, best_model_name]:
+                    shutil.copy(upload_path, os.path.join(wandb.run.dir, upload_path))
+                    wandb.save(upload_path, policy="now")
                     """
         self._print(string)
 
@@ -297,6 +297,9 @@ class _Templates:
             """ if on_kaggle else ""
         string = \
             f"""
+            from IPython.core.magics.display import Javascript
+            python_script_path = Javascript(\"\"\"IPython.notebook.kernel.execute('file_path = "' + IPython.notebook.notebook_name + '"')\"\"\")
+
             class Config:
                 # Control
                 mode = "train"
@@ -310,6 +313,7 @@ class _Templates:
                 main_path = ""; assert os.path.exists(main_path)
                 csv_path = ".csv"; assert os.path.exists(csv_path)
                 model_load_path = ".pth"; assert os.path.exists(model_load_path)
+                python_script_path = file_path
     
                 # Adjustable variables
                 wandb_watch_activated = False
@@ -326,7 +330,8 @@ class _Templates:
                 architecture = "efficientnet_b3"
                 
                 # Seed everything
-                U.pytorch.seed_torch(seed = 12, deterministic = False)
+                seed = 12
+                U.pytorch.seed_torch(seed = seed, deterministic = False)
                 
                 # W&B logging
                 to_log = dict(

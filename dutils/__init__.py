@@ -53,6 +53,8 @@ def search(name:str):
 #   * Add missing checks
 #   * Custom DataLoader that can .to(device) and do some custom stuff before getting batch e.g. squeeze(1)
 #   * Need a way to test the templates
+#   * template: Add some class freqency prediction log to the training loop (pretty useful to understand if the model has collapsed and only predict a single class)
+#   * template: Add a baseline value to the training loop (e.g. the best loss value if you just predict 0, 1, 2 ... etc)
 #   * template: dataset/dataloader setup with train/valid split
 #   * template: optimizer = C.optimizer(model.parameters(), **C.optimizer_hyper)
 #               scheduler = C.scheduler(optimizer, **C.scheduler_hyper)
@@ -108,7 +110,7 @@ def search(name:str):
 # NOTES, IDEAS AND RANDOM THOUGHTS:
 # ______________________________________________________________________________________________________________________
 
-# The image module could have a Image class which could hold stuff like format e.g. "RGB"
+# The image module could have an Image class which could hold stuff like format e.g. "RGB"
 # Should country_converter even be here? There must be some other implementation which has already done it?
 # seaborn.set_context(context="talk")  |  https://seaborn.pydata.org/generated/seaborn.set_context.html
 # Add color print option e.g. print_in(text, "orange")
