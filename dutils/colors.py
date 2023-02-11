@@ -1,10 +1,9 @@
 """
 Description:
 Helper functions for working with colors.
-Intended use through the class instance `colors`.
 
 Example:
->> colors.random_color(color_type="hex", amount=2)
+>> random_color(color_type="hex", amount=2)
 ['#c51cbe', '#0dc76a']
 """
 

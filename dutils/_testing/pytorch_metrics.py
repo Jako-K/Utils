@@ -8,6 +8,7 @@ import pandas as _pd
 from datetime import datetime as _datetime
 import ast as _ast
 
+
 class CategoricalMetrics:
     """
     This is basically just a namespace with different functions designed to evaluate metrics e.g. accuracy.

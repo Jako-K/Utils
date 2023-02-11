@@ -16,6 +16,14 @@ import matplotlib.pylab as _plt
 from . import type_check as _type_check
 
 
+def scientific_notation(number, num_mantissa:int):
+    """ Rewrite `number` to scientific notation with `num_mantissa` amount of decimals """
+    # Checks + int --> float cast if necessary
+    if isinstance(number, int): number = float(number)
+    _type_check.assert_types([number, num_mantissa], [float, int])
+
+    return format(number, f".{num_mantissa}E")
+
 def pandas_standardize_df(df:_pd.DataFrame):
     """
     Function description:
@@ -205,6 +213,7 @@ def confusion_matrix_binary(targets:_np.ndarray, preds:_np.ndarray, plot:bool=Tr
 
 
 __all__ = [
+    "scientific_notation",
     "pandas_standardize_df",
     "get_grid_coordinates",
     "sturges_rule",

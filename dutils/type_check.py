@@ -119,7 +119,6 @@ def assert_comparison_number(number, check_against, comparison:str, number_name:
     @param check_against: Value `number` is checked against
     @param comparison: Comparison operator, must be in [">", "<", "<=", ">=", "=", "=="]
     @param number_name: The name of `number`which is used in the error prints
-
     """
 
     # Checks

@@ -23,6 +23,12 @@ import shutil as _shutil
 import pathlib as _pathlib
 import pkg_resources as _pkg_resources
 import json as _json
+import PyPDF2 as _PyPDF2
+from tkinter import Tcl as _Tcl
+from datetime import datetime as _datetime
+from datetime import timedelta as _timedelta
+from pytube import YouTube as _Youtube
+import subprocess as _subprocess
 
 from . import colors as _colors
 from . import input_output as _input_output
@@ -31,9 +37,8 @@ from . import images as _images
 from . import pytorch as _pytorch
 from . import system_info as _system_info
 from . import videos as _videos
-from datetime import datetime as _datetime
-from datetime import timedelta as _timedelta
-from pytube import YouTube as _Youtube
+
+
 
 def load_dicom(path:str):
     # Checks
@@ -285,6 +290,8 @@ def clear_cuda():
 
 
 def get_password(length:int=12, numbers:bool=True, upper_case:bool=True, lower_case:bool=True, special_symbol:bool=True):
+    assert any([numbers ,upper_case ,lower_case ,special_symbol]), "At least one character option need to be active"
+
     drawing_pool = []
     if numbers: 
         drawing_pool += [str(n) for n in range(10)]
@@ -327,7 +334,8 @@ def get_wordle_options(greens:str=".....", yellow_rows:list=["....."], greys:str
             search_query += f"[^{letters_not_on_place[i] + greys}]"
     search_query += "$"
 
-    df = _pd.read_csv("./_data/wordle.csv")["words"]
+    file_path = _os.path.dirname(_os.path.abspath(__file__))
+    df = _pd.read_csv(file_path + "/_data/wordle.csv")["words"]
     results = df[df.str.contains(search_query)]
     return results.tolist()
     
@@ -356,6 +364,7 @@ def ipynb_2_py(path:str) -> dict:
     
 
 def inverse_normalize(tensor, mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225)):
+    """ Primarily used to plot images that has been normalized as tensors through e.g. augmentation"""
     mean = torch.as_tensor(mean, dtype=tensor.dtype, device=tensor.device)
     std = torch.as_tensor(std, dtype=tensor.dtype, device=tensor.device)
     if mean.ndim == 1:
@@ -366,15 +375,115 @@ def inverse_normalize(tensor, mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.2
     return tensor
 
 
-def download_youtube_video(url:str, save_path_folder:str="./", video_name:bool = None):
+def download_youtube_video(url:str, save_path_folder:str="./", video_name:bool = None, only_video:bool = False):
     # From the officiel tutorial:
     # https://pytube.io/en/latest/user/quickstart.html
     
-    assert _re.search("^https://www\.youtube\.com/watch\?v=.{11}$", url), "Bad url"
+    assert _re.search("^https://www\.youtube\.com/watch\?v=", url), "Bad url"
     assert (video_name[-4:].lower() == ".mp4") or (video_name is None), "`video_name` should end on `.mp4` or be `None`"
     yt = _Youtube(url)
-    stream = yt.streams.filter(progressive=False, only_video=True, file_extension='mp4')[0]
+    stream = yt.streams.filter(progressive=False, only_video=only_video, file_extension='mp4')[0]
     stream.download(save_path_folder, filename=video_name)
+
+
+def get_accessible(x):
+    """ 
+    Return everything accessible from `x`. 
+    NOTE: this does not include anything staring with or ending with `_`
+    """
+    accessible = dir(x)
+    accessible = [a for a in accessible if not (a.startswith("_") or a.endswith("_"))]
+    return accessible
+
+
+
+def read_pdf(pdf_path:str, combine_pages:bool=True) -> _List[str]:
+    """ Takes a pdf path and return each a list of pages as strings"""
+    file = open(pdf_path, 'rb')
+    file_reader = _PyPDF2.PdfFileReader(file)
+    pages = [page.extract_text() for page in file_reader.pages]
+
+    if not combine_pages:
+        return pages
+
+    pages_combined = ""
+    for i, page in enumerate(pages):
+        pages_combined += f"\n\n{'#'*75}\n{i}\n{'#'*75}\n\n" 
+        pages_combined += page
+    return pages_combined
+
+
+def sorted_lexicographically(l:list):
+    return _Tcl().call('lsort', '-dict', l)
+
+
+def show_frames_as_videos(frames:_List[_np.ndarray], fps:int=10, repeat_n_times:int=1):
+    # Every frame in frames should be of shape (H, W, C)
+    delay = int(1000 / fps)
+    
+    if isinstance(frames, _np.ndarray) and (frames.shape == (32, 337, 616, 3)):
+        frames = [f for f in frames]
+    
+    try:
+        for i in list(range(len(frames))) * repeat_n_times:
+            _cv2.imshow("Video", frames[i][..., ::-1]) # RGB2BGR <-- [..., ::-1]
+
+            if _cv2.waitKey(delay) & 0xFF == ord('q'):
+                break
+        _cv2.destroyAllWindows()
+        
+    except Exception:
+        _cv2.destroyAllWindows()
+
+
+def has_windows_line_end(path:str):
+    """
+    Linux encodes "new line" as `\n` while windows encodes it as `\r\n`.
+    This function just make a naive check on the first line contained at `path`
+    and check if it ends with `\r\n`. If yes, I'll assume windows-encoding.
+    """
+
+    with open(path, 'rb') as f:
+        first_line = f.readline()
+    return first_line[-2:] == b"\r\n"
+
+
+def save_numpy_frames_as_video(clip: _np.ndarray, save_path: str, temp_folder: str, fps: int = 12):
+    # Check paths
+    assert not _os.path.exists(save_path), "Path already exists"
+    assert save_path[-4:] == ".mp4", "Only accept mp4 format"
+    assert _os.path.exists(temp_folder), "Folder path already exists"
+    assert _os.path.isdir(temp_folder), "`temp_folder` must be a folder, but detected something else"
+    assert len(glob(temp_folder + "/*")) == 0, "`temp_folder` must be empty"
+
+    # Check `clip`
+    assert isinstance(clip, _np.ndarray) and (len(clip.shape) == 4), "Expect a numpy array of shape (frames, height, width, channels)"
+    assert all(d >= 1 for d in clip.shape), "All dims must be strictly positive"
+    f, h, w, c = clip.shape  # frames x height x width x channels
+    assert f > 1, "A video with less than 2 frames?"
+    assert c == 3, "Haven't tested anything else then RGB (greyscale should work though)"
+    assert (h > 200) and (w > 200), "Assuming a video this small must be a mistake somehow"
+
+    # Save frames temporarily
+    # NOTE: The reason for saving to disk first, is because I wanna use ffmpeg for the video creation as opposed to e.g. cv2
+    frame_save_paths = []
+    for frame_index, frame in enumerate(clip):
+        frame_save_path = temp_folder + '/{:06d}'.format(frame_index + 1) + ".png"
+        _cv2.imwrite(frame_save_path, frame[:, :, ::-1])  # [:, :, ::-1] --> RGB2BGR
+        frame_save_paths.append(frame_save_path)
+
+    # Make video
+    command = f'ffmpeg -r {fps} -i "{temp_folder}/%06d.png" -c:v libx264 "{save_path}"' # NOTE has added codex without testing it!!
+    ffmpeg_return_str = str(_subprocess.run(command))
+    was_successful = "returncode=0" in ffmpeg_return_str
+
+    # Delete all the frames in `temp_folder`
+    for frame_path in frame_save_paths:
+        _os.remove(frame_path)
+
+    # Assert the video creation was successful
+    assert was_successful, f"Something went wrong while using FFMPEG to create the video `{save_path}`.\n" \
+                           f"Error message: `{ffmpeg_return_str}`"
 
 
 __all__ = [
@@ -399,7 +508,13 @@ __all__ = [
     "get_wordle_options",
     "ipynb_2_py",
     "inverse_normalize",
-    "download_youtube_video"
+    "download_youtube_video",
+    "get_accessible",
+    "read_pdf",
+    "sorted_lexicographically",
+    "show_frames_as_videos",
+    "has_windows_line_end",
+    "save_numpy_frames_as_video"
 ]
 
 
