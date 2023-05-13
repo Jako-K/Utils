@@ -29,6 +29,8 @@ from datetime import datetime as _datetime
 from datetime import timedelta as _timedelta
 from pytube import YouTube as _Youtube
 import subprocess as _subprocess
+from geopy.geocoders import Nominatim as _Nominatim
+import pypdf as _pypdf
 
 from . import colors as _colors
 from . import input_output as _input_output
@@ -375,7 +377,7 @@ def inverse_normalize(tensor, mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.2
     return tensor
 
 
-def download_youtube_video(url:str, save_path_folder:str="./", video_name:bool = None, only_video:bool = False):
+def download_youtube_video(url:str, save_path_folder:str="./", video_name:str = None, only_video:bool = False):
     # From the officiel tutorial:
     # https://pytube.io/en/latest/user/quickstart.html
     
@@ -486,6 +488,50 @@ def save_numpy_frames_as_video(clip: _np.ndarray, save_path: str, temp_folder: s
                            f"Error message: `{ffmpeg_return_str}`"
 
 
+def get_file_dateformat():
+    return _datetime.today().strftime("%d-%m-%Y_%H-%M-%S")
+
+
+def thousands_split(number, dk_split=True):
+    reformatted = f"{number:,}"
+    return reformatted.replace(",", ".") if dk_split else reformatted
+
+
+# Extract loaction info from lat/long
+def lat_long_coord_2_address_info(row):
+    # NOTE: This uses an online API under the hood, at this API is rather slow (~2 requests a second)
+    geolocator = _Nominatim(user_agent="http")
+    row = row[["lat", "lng"]]
+    print(row.tolist())
+    coord = str(row.tolist())[1:-1]
+    location = geolocator.reverse(coord, exactly_one=True)
+    return location.raw["address"]
+
+
+def merge_pdfs(pdf_paths:_List[str], save_path:str="./merged_pdf_result.pdf", can_overwrite:bool=False) -> str:
+    """
+    >>> pdf_paths = list(glob("./*.pdf"))
+    >>> U.experimental.merge_pdfs(pdf_paths)
+    'merged_pdf_result.pdf'
+    """
+
+    # Checks
+    _type_check.assert_types([pdf_paths, save_path, can_overwrite], [list, str, bool])
+    [_input_output.assert_path(p) for p in pdf_paths]
+    assert save_path.lower().endswith(".pdf"), f"Expected `{save_path}` to end with `.pdf`"
+    if not can_overwrite:
+        _input_output.assert_path_dont_exists(save_path)
+
+    # Merge pdfs
+    merger = _pypdf.PdfMerger()
+    for pdf in pdf_paths:
+        merger.append(pdf)
+    
+    # Wrap up
+    merger.write(save_path)
+    merger.close()
+    return save_path
+
 __all__ = [
     "show_dicom",
     "load_dicom",
@@ -514,7 +560,11 @@ __all__ = [
     "sorted_lexicographically",
     "show_frames_as_videos",
     "has_windows_line_end",
-    "save_numpy_frames_as_video"
+    "save_numpy_frames_as_video",
+    "get_file_dateformat",
+    "thousands_split",
+    "lat_long_coord_2_address_info",
+    "merge_pdfs",
 ]
 
 

@@ -24,6 +24,7 @@ def scientific_notation(number, num_mantissa:int):
 
     return format(number, f".{num_mantissa}E")
 
+
 def pandas_standardize_df(df:_pd.DataFrame):
     """
     Function description:
@@ -92,35 +93,10 @@ def sturges_rule(data):
     return bin_width, number_of_bins
 
 
-def unfair_coin_flip(p: float):
-    """
-    Function description:
-    Flip a weighted coin
-
-    @param p: Percentage of success should be range (0, 1)
-    """
-    _type_check.assert_type(p, float)
-    if not (0.0<p<1.0):
-        raise ValueError(f"0<p<1, but received p: `{p}`")
-    return _random.random() > p
-
-
 def int_sign(x: int):
     """ Return -1 if `x` is negative and 1 if `x` is positive """
     _type_check.assert_type(x, int)
     return int(_math.copysign(1, x))
-
-
-def init_2d_list(rows:int, cols:int, value=None):
-    """
-    # Function description
-    Construct a 2D list with dimensions `rows` x `cols` filled with `value`
-
-    Example:
-    >> init_2d_array(4,3)
-    [[None, None, None], [None, None, None], [None, None, None], [None, None, None]]
-    """
-    return [[value for _ in range(cols)] for _ in range(rows)]
 
 
 def ndarray_to_bins(array:_np.ndarray, num_bins:int = None):
@@ -217,9 +193,7 @@ __all__ = [
     "pandas_standardize_df",
     "get_grid_coordinates",
     "sturges_rule",
-    "unfair_coin_flip",
     "int_sign",
-    "init_2d_list",
     "ndarray_to_bins",
     "confusion_matrix_binary"
 ]

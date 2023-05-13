@@ -45,6 +45,7 @@ def get_imports(all_requests:list=None):
     f"""
     # All around
     import matplotlib.pyplot as plt
+    plt.rcParams['figure.figsize'] = (20, 6)
     import seaborn as sns; sns.set_style("whitegrid")
     {"from tqdm.notebook import tqdm" if _jupyter.in_jupyter() else "from tqdm import tqdm"}
     import pandas as pd
