@@ -28,6 +28,7 @@ from tkinter import Tcl as _Tcl
 from datetime import datetime as _datetime
 from datetime import timedelta as _timedelta
 from pytube import YouTube as _Youtube
+from pytube.cli import on_progress as _on_progress
 import subprocess as _subprocess
 from geopy.geocoders import Nominatim as _Nominatim
 import pypdf as _pypdf
@@ -248,6 +249,7 @@ def grep(strings:list, pattern, case_sensitive:bool=True, return_booleans:bool=F
         raise ValueError(f"Received a bad regex pattern. Failed with: `{pattern}`")
     
     return_values = []
+    
     for string in strings:
         _type_check.assert_type(string, str)
         found_pattern = _re.search(pattern, string, flags=0 if case_sensitive else _re.IGNORECASE)
@@ -377,15 +379,19 @@ def inverse_normalize(tensor, mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.2
     return tensor
 
 
-def download_youtube_video(url:str, save_path_folder:str="./", video_name:str = None, only_video:bool = False):
+def download_youtube_video(url:str, path_folder:str="./", video_name:str = None, only_video:bool = False, add_progress_bar:bool=True):
     # From the officiel tutorial:
     # https://pytube.io/en/latest/user/quickstart.html
     
     assert _re.search("^https://www\.youtube\.com/watch\?v=", url), "Bad url"
     assert (video_name[-4:].lower() == ".mp4") or (video_name is None), "`video_name` should end on `.mp4` or be `None`"
-    yt = _Youtube(url)
-    stream = yt.streams.filter(progressive=False, only_video=only_video, file_extension='mp4')[0]
-    stream.download(save_path_folder, filename=video_name)
+    if add_progress_bar:
+        yt = _YouTube(url, on_progress_callback=_on_progress)
+    else:
+        yt = _YouTube(url)
+    stream = yt.streams.filter(progressive=False, only_video=only_video, file_extension='mp4')
+    stream = stream.get_highest_resolution()
+    stream.download(path_folder, filename=video_name)
 
 
 def get_accessible(x):
@@ -532,6 +538,85 @@ def merge_pdfs(pdf_paths:_List[str], save_path:str="./merged_pdf_result.pdf", ca
     merger.close()
     return save_path
 
+
+class TextSearcher:
+    """
+    # EXAMPLE
+    >> searcher = TextSearcher()
+    >> to_search_through = ['Defines expansion with a kernel', 'Random forest improves performance']
+    
+    >> indexes, scores, texts = searcher.sematic_search(to_search_through, "Random forest score", n=-1)
+    >> indexes, scores, texts
+    ([0, 1], [-0.08474002, 0.7031414], ['Defines expansion with a kernel', 'Random forest improves performance'])
+    
+    >> indexes, scores, texts = searcher.regex_search(to_search_through, "Random forest.*performance")
+    >> indexes, texts
+    ([1], ['Random forest improves performance'])
+    
+    """
+    
+    def __init__(self, model_name="multi-qa-MiniLM-L6-cos-v1"):
+        # Checks
+        valid_model_names = ["all-mpnet-base-v2", "multi-qa-mpnet-base-dot-v1", "all-distilroberta-v1", "all-MiniLM-L12-v2", "multi-qa-distilbert-cos-v1", "all-MiniLM-L6-v2", "multi-qa-MiniLM-L6-cos-v1", "paraphrase-multilingual-mpnet-base-v2", "paraphrase-albert-small-v2", "paraphrase-multilingual-MiniLM-L12-v2", "paraphrase-MiniLM-L3-v2", "distiluse-base-multilingual-cased-v1", "distiluse-base-multilingual-cased-v2"]
+        _type_check.assert_type(model_name, str)
+        if model_name not in valid_model_names:
+            raise ValueError(f"`{model_name}` is not valid. Choose one of these: `{valid_model_names}`")
+        
+        # Define model and scoring function
+        try:
+            import sentence_transformers
+        except ModuleNotFoundError:
+            raise RuntimeError("Could not detect `sentence_transformers`. use `pip3 install sentence-transformers` to continue")
+        self.model = sentence_transformers.SentenceTransformer(model_name).cuda()
+        self.score_function = sentence_transformers.util.cos_sim #util.dot_score
+    
+    def regex_search(self, text_strings:list, search_query:str, case_sensitive:bool=False, dont_return_text:bool=False):
+        # Checks
+        _type_check.assert_types([text_strings, search_query, case_sensitive, dont_return_text], [list, str, bool, bool])
+        _type_check.assert_list_slow(text_strings, str)
+        
+        # Do matches
+        matches_indexes_booleans = grep(text_strings, search_query, case_sensitive=case_sensitive, return_booleans=True)
+        matches_indexes = [i for i, is_match in enumerate(matches_indexes_booleans) if is_match]
+        matches_text = [text_strings[i] for i in matches_indexes]
+        if dont_return_text:
+            return matches_indexes
+        return matches_indexes, matches_text
+    
+    
+    def sematic_search(self, text_strings:list, search_query:str, n:int=None, min_score:float=None, dont_return_text:bool=False):
+        # Checks
+        _type_check.assert_types([text_strings, search_query, n, min_score], [list, str, int, float], [0, 0, 1, 1])
+        _type_check.assert_list_slow(text_strings, str)
+        if min_score is not None:
+            assert -1.0 <= min_score <= 1.0
+        if n is None:
+            n = 1 if (5 > len(text_strings)) else 5
+        elif n == -1:
+            n = len(text_strings)
+        else:
+            assert n < len(text_strings)
+        
+        # Get embeddings for text_string and search_query
+        query_embedding = self.model.encode(search_query)
+        passage_embedding = self.model.encode(text_strings)
+        
+        # Similarity scoring
+        similarities = self.score_function(query_embedding, passage_embedding)
+        similarities = similarities.squeeze(0).numpy()
+        if min_score:
+            similarities[similarities < min_score] = -_np.inf # Set all scores below the threshold to 0, this will mean they are included from matching
+        
+        # Extract the top `n` findings
+        top_n_indexes = [int(i) for i in list(_np.argsort(similarities)[-n:]) if similarities[i] != -_np.inf]
+        top_n_scores  = [similarities[i] for i in top_n_indexes]
+        top_n_texts   = [text_strings[i] for i in top_n_indexes]
+        
+        if dont_return_text:
+            return top_n_indexes, top_n_scores
+        return top_n_indexes, top_n_scores, top_n_texts
+
+
 __all__ = [
     "show_dicom",
     "load_dicom",
@@ -565,6 +650,7 @@ __all__ = [
     "thousands_split",
     "lat_long_coord_2_address_info",
     "merge_pdfs",
+    "TextSearcher",
 ]
 
 
