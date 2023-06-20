@@ -4,6 +4,7 @@ Stuff that hasn't been tested yet or I'm on the fence about
 """
 import gc as _gc
 from typing import List as _List
+from typing import Union as _Union
 
 import torch as _torch
 import numpy as _np
@@ -27,7 +28,7 @@ import PyPDF2 as _PyPDF2
 from tkinter import Tcl as _Tcl
 from datetime import datetime as _datetime
 from datetime import timedelta as _timedelta
-from pytube import YouTube as _Youtube
+from pytube import YouTube as _YouTube
 from pytube.cli import on_progress as _on_progress
 import subprocess as _subprocess
 from geopy.geocoders import Nominatim as _Nominatim
@@ -321,7 +322,7 @@ def get_wordle_options(greens:str=".....", yellow_rows:list=["....."], greys:str
     """
     # Checks
     _type_check.assert_types([greens, yellow_rows, greys], [str, list, str])
-    assert (len(greens) == 5) and all(len(r) == 5 for r in yellow_rows), "the length of `grens` and each row in `yellow_rows` by be exatcly 5"
+    assert (len(greens) == 5) and all(len(r) == 5 for r in yellow_rows), "the length of `greens` and each row in `yellow_rows` by be exatcly 5"
 
 
     letters_not_on_place = ["" for i in range(5)]
@@ -344,27 +345,39 @@ def get_wordle_options(greens:str=".....", yellow_rows:list=["....."], greys:str
     return results.tolist()
     
 
-def ipynb_2_py(path:str) -> dict:
+def ipynb_2_py(ipynb_path:str, py_path:str, allow_overwrite:bool=False) -> None:
     """ Converts `path` from jupyter notebook format (.ipynb) to regular python (.py) """
-
-    _input_output.assert_path(path)
-    if path[-6:] != ".ipynb":
-        raise ValueError("Expected .ipynb file extension, but received something else")
     
-    with open(path) as f:
+    # Checks
+    _type_check.assert_types([ipynb_path, py_path, allow_overwrite], [str, str, bool])
+    _input_output.assert_path(ipynb_path)
+    
+    if not allow_overwrite:
+        _input_output.assert_path_dont_exists(py_path)
+    if ipynb_path[-6:] != ".ipynb":
+        raise ValueError(f"Expected .ipynb file extension, but received {ipynb_path}")
+    if py_path[-3:] != ".py":
+        raise ValueError(f"Expected .py file extension, but received {py_path}")
+        
+    # Setup
+    with open(ipynb_path) as f:
         data = _json.load(f)["cells"]
-    
     code_base = ""
     hashtag_line = "#"*100 + "\n"
 
+    # Extract content from cells
     for i, cell in enumerate(data):
         if cell["cell_type"] == "markdown":
-            code_base += f"\n\n{hashtag_line}{''.join(cell['source'])}\n{hashtag_line}\n"
+            code_base += f"{hashtag_line}"
+            code_base += "".join(["#"+l if l[0]!="#" else ""+l for l in cell['source']])
+            code_base += f"\n{hashtag_line}\n"
 
         elif cell["cell_type"] == "code":
-            code_base += ''.join(cell['source'])
+            code_base += "".join(cell['source']) + "\n\n"
 
-    return code_base
+    # Write to file
+    with open(py_path, "w" if allow_overwrite else "x") as f:
+        f.write(code_base)
     
 
 def inverse_normalize(tensor, mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225)):
@@ -380,7 +393,7 @@ def inverse_normalize(tensor, mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.2
 
 
 def download_youtube_video(url:str, path_folder:str="./", video_name:str = None, only_video:bool = False, add_progress_bar:bool=True):
-    # From the officiel tutorial:
+    # From the official tutorial:
     # https://pytube.io/en/latest/user/quickstart.html
     
     assert _re.search("^https://www\.youtube\.com/watch\?v=", url), "Bad url"
@@ -516,8 +529,8 @@ def lat_long_coord_2_address_info(row):
 
 def merge_pdfs(pdf_paths:_List[str], save_path:str="./merged_pdf_result.pdf", can_overwrite:bool=False) -> str:
     """
-    >>> pdf_paths = list(glob("./*.pdf"))
-    >>> U.experimental.merge_pdfs(pdf_paths)
+    >> pdf_paths = list(glob("./*.pdf"))
+    >> U.experimental.merge_pdfs(pdf_paths)
     'merged_pdf_result.pdf'
     """
 
@@ -617,6 +630,204 @@ class TextSearcher:
         return top_n_indexes, top_n_scores, top_n_texts
 
 
+# import warnings
+
+
+def assert_valid_image(image: _np.ndarray):
+    """ Try and ensure that `image` is legitimate """
+    # Check shape
+    assert len(image.shape) in [2, 3,
+                                4], f"Expected the shape of the image to be in [2,3,4], but received `{len(image.shape)=}`"
+    is_greyscale = (len(image.shape) == 2) or (len(image.shape) == 3 and (image.shape[2] == 1))
+    if (len(image.shape) != 3) and (not is_greyscale):
+        raise ValueError(f"Expected 3 dimensional shape for non-greyscale images (dim1 x dim2 x channels). "
+                         f"Received shape `{image.shape}`")
+
+    # Check data type
+    if image.dtype != 'uint8':
+        extra = ""
+        if 'f' in str(image.dtype):
+            extra = " If `image` is in 0.0-1.0 float format, try casting it with: `image = (image * 255).astype(np.uint8)`"
+        raise TypeError(f"Expected `image` to be of dtype `uint8`, but received `{image.dtype}`.{extra}")
+
+    # Check dimensions
+    if image.shape[0] < 10:
+        raise ValueError(f"Expected an image with a height of at least 10 pixels, but received `{height=}`")
+    if image.shape[1] < 10:
+        raise ValueError(f"Expected an image with a width of at least 10 pixels, but received `{width=}`")
+
+    # Check pixel range
+    if image.min() < 0:
+        raise ValueError("Detected pixel value below 0. Consider using `numpy.clip` to get rid of them")
+    if image.max() > 255:
+        raise ValueError("Detected pixel value above 255. Consider using `numpy.clip` to get rid of them")
+
+
+def draw_text(
+        image: _np.ndarray,
+        text: str,
+        position: _Union[str, tuple] = "upper_left_corner",
+        font: int = _cv2.FONT_HERSHEY_DUPLEX,
+        font_scale: int = None,
+        color: tuple = None,
+        thickness=None,
+        background_color: _Union[str, tuple] = "auto",
+        line_type: int = _cv2.LINE_AA,
+        padding_pixels: int = 10
+):
+    """
+    A function designed to make it easy to draw `text` on `image` with minimum effort.
+
+    # EXAMPLE
+    >> image = np.zeros((512, 1024, 3)).astype(np.uint8)
+    >> draw_text(image, "Hello 123", "bottom_left_corner", padding_pixels=100)
+
+    @param image: np.ndarray image to draw `text` upon. Expects an uint8 image.shape = height x width x (optional) color_channel(s)
+    @param text: The text string to be drawn on the image.
+    @param position: The position of the text on the image. It can be specified as a string:
+                     ("upper_left_corner", "upper_right_corner", "bottom_left_corner", "bottom_right_corner", or "center")
+                     or as a tuple of (x, y) coordinates.
+    @param font: The font type to be used for the text. It should be one of the predefined constants from the cv2 library (e.g., cv2.FONT_HERSHEY_DUPLEX).
+    @param font_scale: The scale factor for the font size. If not provided, it will be calculated based on the image size.
+    @param color: The color of the text, specified as a tuple of RGB values. If not provided, it will be automatically determined based on the background color of `image`.
+    @param thickness: The thickness of the text. If not provided, it will be calculated based on the image size.
+    @param background_color: The background color behind the text. It can be specified as a string ("auto") or as a tuple of RGB values. If "auto" is specified,
+                             the background color will be automatically determined based on the background color of `image`.
+                             If a tuple is provided, the background color will be filled with that color.
+    @param line_type: The type of line used for drawing the text. It should be one of the predefined constants from the cv2 library: e.g `cv2.LINE_AA=16`
+    @param padding_pixels: The number of pixels used for padding around the text. This can only be applied together with string `position` e.g. "upper_left_corner"
+    """
+
+    # Checks - simple
+    # ------------------------------------------------------
+    _type_check.assert_types(
+        [image, text, position, font, font_scale, color, thickness, background_color, line_type, padding_pixels],
+        [_np.ndarray, str, (str, tuple), int, int, tuple, int, (str, tuple), int, int],
+        [0, 0, 1, 0, 1, 1, 1, 1, 0, 0],
+    )
+
+    # Checks - image
+    assert_valid_image(image)
+    image = _copy.deepcopy(image)
+    if (len(image.shape) == 3) and (image.shape[-1] == 1):
+        _warnings.warn("You have provided an greyscale image in the format (dim1 x dim2 x 1), it will be squeezed down to (dim1 x dim2)")
+        image = image[:, :, 0:1].squeeze(2)
+
+    # Checks - cv2 specific stuff and background_color
+    # ------------------------------------------------------
+    if font not in [0, 1, 2, 3, 4, 5, 6, 7]:
+        raise ValueError(
+            f"Unrecognized `{font=}`. As of writing this, there's 8 valid fonts in cv2. These are encoded with an enum spanning from 0-7 (both ends included).")
+    if line_type not in [4, 8, 16]:
+        raise ValueError(
+            f"Unrecognized `{line_type=}`. As of writing this, there's 3 valid fonts in cv2. These are encoded with an enum with [LINE_4=4, LINE_8=8, LINE_AA=16]")
+    if font_scale is not None:
+        assert font_scale > 0, f"Expected font_scale > 0, but received `{font_scale=}`"
+    if color is not None:
+        assert (len(color) == 3) and all(0 <= c <= 255 for c in color), f"Expected `color` to contain 3 RGB values between 0-255, but received `{color=}`"
+    if thickness is not None:
+        assert thickness > 0, f"Expected thickness > 0, but received `{thickness=}`"
+    if isinstance(background_color, tuple):
+        assert (len(background_color) == 3) and all(0 <= c <= 255 for c in background_color), \
+            f"Expected `background_color` to contain 3 RGB values between 0-255, but received `{background_color=}`"
+    if isinstance(background_color, str):
+        assert background_color == "auto", f"The only valid string-argument for background_color is 'auto', but received {background_color=}"
+
+    # Checks - Text position
+    # ------------------------------------------------------
+    legal_positions = ["upper_left_corner", "upper_right_corner", "bottom_left_corner", "bottom_right_corner", "center"]
+    if isinstance(position, str):
+        assert position in legal_positions, f"Invalid `{position=}`. Legal values are: `{legal_positions}`"
+    assert 0 <= padding_pixels <= min([c // 2 for c in image.shape[:2]]), \
+        f"Expected 0 <= padding_pixels <= min_image_size/2, but received `{padding_pixels=}`"
+
+    if isinstance(position, tuple):
+        assert len(
+            position) == 2, f"Invalid `{position=}`. Expected a tuple with (text_left_corner_x, text_left_corner_right)"
+        assert 0 <= position[0] <= image.shape[
+            0], f"Invalid `{position[0]=}`. The first coordinate (width) is outside the image"
+        assert 0 <= position[1] <= image.shape[
+            1], f"Invalid `{position[1]=}`. The second coordinate (height) is outside the image"
+
+        if padding_pixels is not None:
+            warning_message = f"`{padding_pixels=}` will be ignored. It only works with string `position` e.g. `upper_left_corner`"
+            _warnings.warn(warning_message)
+
+    # Assign font_scale and thickness dynamically
+    # ------------------------------------------------------
+    if font_scale is None:
+        font_scale = max(1, round(max(image.shape[:2]) / 1000))
+    if thickness is None:
+        thickness = max(1, round(max(image.shape[:2]) / 1000))
+
+    # Handle position conversion
+    # ------------------------------------------------------
+    image_height, image_width = image.shape[0], image.shape[1]
+    (text_width, text_height), _ = _cv2.getTextSize(text, font, font_scale, thickness)
+    if isinstance(position, str):
+        if position == "upper_left_corner":
+            position = (padding_pixels, text_height + padding_pixels)
+        elif position == "upper_right_corner":
+            position = (image_width - (text_width + padding_pixels), text_height + padding_pixels)
+        elif position == "bottom_left_corner":
+            position = (padding_pixels, image_height - padding_pixels)
+        elif position == "bottom_right_corner":
+            position = (image_width - (text_width + padding_pixels), image_height - padding_pixels)
+        elif position == "center":
+            position = ((image_width - text_width) // 2, (image_height + text_height) // 2)
+        else:
+            raise RuntimeError("Shouldn't have gotten this far")
+
+    # Handle text and background colors
+    # ------------------------------------------------------
+
+    # Calculate some shared parameters for color calculations
+    if (color is None) or (background_color is not None):
+        extra_padding = text_height // 8
+
+        # Find text area in the image
+        x1 = max(0, position[0] - extra_padding)
+        x2 = min(image_width, position[0] + extra_padding + text_width)
+        y1 = max(0, position[1] - extra_padding - text_height)
+        y2 = min(image_height, position[1] + extra_padding)
+
+        # Determine if the text should be dark or bright
+        background_pixels_mean = image[y1:y2, x1:x2].mean()
+        is_dark = (background_pixels_mean < 128)
+
+    # Background color user defined
+    if isinstance(background_color, tuple):
+        image = _cv2.rectangle(image, (x1, y1), (x2, y2), background_color, -1)
+        background_pixels_mean = image[y1:y2, x1:x2].mean()  # Must be recalculated due to the drawn box
+        is_dark = (background_pixels_mean < 128)
+
+    # Text color
+    if color is None:
+        color = (200, 200, 200) if is_dark else (50, 50, 50)
+
+    # Background color -auto
+    if background_color == "auto":
+        background_image = _np.zeros(image[y1:y2, x1:x2].shape)
+        if not is_dark:
+            background_image = background_image + 255
+        background_image = background_image.astype(_np.uint8)
+        image[y1:y2, x1:x2] = _cv2.addWeighted(image[y1:y2, x1:x2], 0.40, background_image, 0.60, 0.0)
+
+    # Draw text to image
+    # ------------------------------------------------------
+    try:
+        image = _cv2.putText(image, text, position, font, font_scale, color, thickness, line_type)
+    except:
+        # TODO: Find out if this is still an issue. I encountered a weird cv2 bug in which it refused
+        # to acknowledge `image` as a valid np.array unless `np.ascontiguousarray` was applied. This fix
+        # was mentioned in an official bug report on cv2's github page. But it should not be necessary.
+        image = _np.ascontiguousarray(image, dtype=_np.uint8)
+        image = _cv2.putText(image, text, position, font, font_scale, color, thickness, line_type)
+
+    return image
+
+
+
 __all__ = [
     "show_dicom",
     "load_dicom",
@@ -651,6 +862,8 @@ __all__ = [
     "lat_long_coord_2_address_info",
     "merge_pdfs",
     "TextSearcher",
+    "assert_valid_image",
+    "draw_text"
 ]
 
 
